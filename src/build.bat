@@ -1,12 +1,13 @@
 @echo off
 
-set common_compiler_flags= -nologo -Od -W4 -Zi -wd4100 -wd4201
+set common_compiler_flags= -nologo -Od -W4 -Zi -wd4100 -wd4201 -wd4189 -wd4505
 set common_linker_flags= user32.lib Gdi32.lib Winmm.lib
 
-IF NOT EXIST ..\..\build mkdir ..\..\build
-pushd ..\..\build
+REM figure out why ..\..\build makes compiling in vim funny
+IF NOT EXIST ..\build mkdir ..\build
+pushd ..\build
 del *.pdb > NUL 2> NUL
-cl %common_compiler_flags% ..\software_renderer\src\win32_software_renderer.cpp -Fmwin32_software_renderer.map /link %common_linker_flags% -incremental:no -opt:ref /PDB:win32_software_renderer%random%.pdb
+cl %common_compiler_flags% ..\src\win32_software_renderer.cpp -Fmwin32_software_renderer.map /link %common_linker_flags% -incremental:no -opt:ref /PDB:win32_software_renderer%random%.pdb
 popd
 
 REM  ---------------------------COMPILER FLAGS------------------------------

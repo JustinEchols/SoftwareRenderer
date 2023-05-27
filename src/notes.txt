@@ -1,0 +1,26 @@
+//
+// NOTE(Justin): How far along do we need to move along b for every step along a? a / b
+// slope...
+//
+//    /|
+//   / |
+//  /  | a
+// /___|
+//   b
+//
+
+// NOTE(Justin): For scan conversion rasterization, the shape that is to
+// be drawn is defined by the set of min/max x values in the scan buffer.
+// As well as the the starting and ending y values (the number of scanlines).
+//
+// E.g. Suppose we want to draw a square. The minimum and maximum values for
+// each entry in the scan buffer are constants. That is, if we wanted to draw a square
+// at the bottom left corner that is 100 pixels wide, then for each entry in 
+// the scan buffer, the minimum is always 0 and the maximum is always 99. Furthermore, 
+// for the shape to actually be a square, the number of scanlines would be 100.
+// As we would have 100 scanlines and each scanline is 100 pixels wide. So,
+// the dimensions are 100 by 100. 
+//
+// Other shapes are defined by variying entries in the scan buffer, according
+// to the desired geometry. 
+

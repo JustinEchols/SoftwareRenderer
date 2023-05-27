@@ -25,10 +25,12 @@ typedef double f64;
 #define internal static
 
 #define ARRAY_COUNT(a) (sizeof(a) / sizeof(a[0]))
+#define ABS(x) ((x < 0) ? -(x): (x))
 
+#define PI32 3.141592653589f
+#define RAD32 (PI32 / 180.0f)
 
 //#define ASSERT(expression) if(!expression){*(int *)0 = 0;}
-
 
 
 typedef struct
@@ -42,6 +44,39 @@ typedef struct
 
 } win32_back_buffer;
 
+typedef struct
+{
+	void *memory;
+	int height;
+} scan_buffer;
+
+enum
+{
+	BUTTON_UP,
+	BUTTON_DOWN,
+	BUTTON_LEFT,
+	BUTTON_RIGHT,
+	BUTTON_IN,
+	BUTTON_OUT,
+	BUTTON_1,
+	BUTTON_2,
+	BUTTON_3,
+
+	BUTTON_COUNT,
+};
+
+typedef struct
+{
+	b32 changed;
+	b32 is_down;
+} button_state;
+
+typedef struct
+{
+	// NOTE(Justin): Should the just be a v2f?
+	button_state Buttons[BUTTON_COUNT];
+} input;
+
 union v2f
 {
 	struct
@@ -53,6 +88,19 @@ union v2f
 		f32 u, v;
 	};
 	f32 e[2];
+};
+
+union v2i
+{
+	struct
+	{
+		s32 x, y;
+	};
+	struct
+	{
+		s32 u, v;
+	};
+	s32 e[2];
 };
 
 union v3f
@@ -127,20 +175,19 @@ union v4f
 	};
 	struct
 	{
-
 		f32 ignored2_;
 		v2f yz;
 		f32 ignored3_;
 	};
 	struct
 	{
-
 		f32 ignored4_;
 		f32 ignored5_;
 		v2f zw;
 	};
 	f32 e[4];
 };
+
 
 
 struct m4x4
@@ -151,20 +198,40 @@ struct m4x4
 
 typedef struct
 {
+	v3f Min;
+	v3f Max;
+} rectangle;
+
+typedef struct
+{
 	v2f Center;
 	f32 radius;
 } circle;
 
-// NOTE(Justin): should a color be a property of a triangle that we can set/modify? 
+
 typedef struct
 {
-	v3f Vertices[3];
+	v3f Color;
+	v4f Vertices[3];
 } triangle;
 
 typedef struct
 {
 	triangle Triangles[2];
 } square;
+
+typedef struct
+{
+	v4f E1;
+	v4f E2;
+	v4f E3;
+} basis;
+
+typedef struct
+{
+	v4f Center;
+	v2f Dim;
+} cube;
 
 #define SOFTWARE_RENDERER_TYPES_H
 #endif
