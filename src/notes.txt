@@ -24,3 +24,16 @@
 // Other shapes are defined by variying entries in the scan buffer, according
 // to the desired geometry. 
 
+
+//
+// NOTE(Justin) Transformations. As of right now Barycentric
+// coordinates are not implemented. Each of the transformations
+// below is applied to the position vectors of the three
+// vertices of the triangle. This works for translations of a
+// triangle but not for rotations or scaling transformations. 
+// Scaling the position vectors of the three vertices produces a
+// shift. Rotating the position vectors of the three vertices
+// will produce a rotation of the trignle. However each vertex
+// will rotate by a different amount based off the length of the
+// position vector. 
+//

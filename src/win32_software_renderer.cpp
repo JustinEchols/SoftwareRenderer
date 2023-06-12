@@ -1,17 +1,3 @@
-
-//
-// NOTE(Justin) Transformations. As of right now Barycentric
-// coordinates are not implemented. Each of the transformations
-// below is applied to the position vectors of the three
-// vertices of the triangle. This works for translations of a
-// triangle but not for rotations or scaling transformations. 
-// Scaling the position vectors of the three vertices produces a
-// shift. Rotating the position vectors of the three vertices
-// will produce a rotation of the trignle. However each vertex
-// will rotate by a different amount based off the length of the
-// position vector. 
-//
-
 #include <windows.h>
 
 #include "software_renderer_types.h"
@@ -53,7 +39,6 @@ scan_buffer_fill_between_vertices(scan_buffer *ScanBuffer, v3f VertexMin, v3f Ve
 		x_current += x_step;
 	}
 }
-
 
 internal void
 scan_buffer_fill_triangle(scan_buffer *ScanBuffer, triangle *Triangle)
@@ -134,14 +119,14 @@ scan_buffer_fill_triangle(scan_buffer *ScanBuffer, triangle *Triangle)
 internal u32
 color_convert_v3f_to_u32(v3f Color)
 {
-	u32 result = 0;
+	u32 Result = 0;
 
 	u32 red		= (u32)(255.0f * Color.r);
 	u32 green	= (u32)(255.0f * Color.g);
 	u32 blue	= (u32)(255.0f * Color.b);
-	result		= ((red << 16) | (green << 8) | (blue << 0));
+	Result		= ((red << 16) | (green << 8) | (blue << 0));
 
-	return(result);
+	return(Result);
 }
 
 internal void
@@ -176,7 +161,6 @@ scan_buffer_draw_shape(win32_back_buffer *Win32BackBuffer, scan_buffer *ScanBuff
 		pixel_row += Win32BackBuffer->stride;
 	}
 }
-
 
 
 internal void
@@ -253,7 +237,6 @@ line_draw_dda(win32_back_buffer *Win32BackBuffer, v2f P1, v2f P2, v3f Color)
 	v2f Increment = {(f32)dx / (f32)steps, (f32)dy / (f32)steps};
 	v2f PixelPos = P1;
 
-
 	pixel_set(Win32BackBuffer, PixelPos, Color);
 	for (k = 0; k < steps; k++) {
 		PixelPos += Increment;
@@ -288,7 +271,7 @@ win32_back_buffer_resize(win32_back_buffer *Win32BackBuffer, int width, int heig
 internal LRESULT CALLBACK
 win32_main_window_callback(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
 {
-	LRESULT result = 0;
+	LRESULT Result = 0;
 	switch (Message) {
 		case WM_CLOSE:
 		case WM_DESTROY:
@@ -323,10 +306,10 @@ win32_main_window_callback(HWND Window, UINT Message, WPARAM wParam, LPARAM lPar
 		} break;
 		default:
 		{
-			result = DefWindowProcA(Window, Message, wParam, lParam);
+			Result = DefWindowProcA(Window, Message, wParam, lParam);
 		}
 	}
-	return(result);
+	return(Result);
 }
 
 internal v4f
@@ -623,7 +606,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 			v3f CameraAboveUp = {0.0f, 0.0f, 1.0f};
 
 			// TODO(Justin): changing the camera to produce a different viewing
-			// perspective does not produce the expected result. For eaxmple,.
+			// perspective does not produce the expected Result. For eaxmple,.
 			// viewing the left down the negative x axis produces an inverted y
 			// axis. fix debug this... 
 			//
@@ -668,8 +651,6 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 
 
 			f32 time_delta = 0.0f;
-			f32 step = 0.0f;
-			f32 step_sin = PI32 / 100.0f;
 
 			LARGE_INTEGER tick_count_before;
 			QueryPerformanceCounter(&tick_count_before);
@@ -932,12 +913,14 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 				circle FragmentCircle;
 				FragmentCircle.Center = MapToScreenSpace * MapToPersp * MapToCamera * Circle.Center;
 				FragmentCircle.Center = (1.0f / FragmentCircle.Center.w) * FragmentCircle.Center;
+
+				// NOTE(Justin): Scaling of the radius by 1/w simulates a
+				// shrinking/growing circle based on if we are moving
+				// away/towards the circle.
 				FragmentCircle.radius = (1.0f / FragmentCircle.Center.w) * Circle.radius;
-				//FragmentCircle.radius = Circle.radius;
 				Color = {1.0f, 1.0f, 1.0f};
 				
-				pixel_set(&Win32BackBuffer, FragmentCircle.Center.xy, Color);
-				//circle_draw(&Win32BackBuffer, FragmentCircle, Color);
+				circle_draw(&Win32BackBuffer, FragmentCircle, Color);
 
 
 #if 1
