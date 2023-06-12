@@ -387,7 +387,7 @@ operator *(m4x4 A, v4f V)
 }
 
 inline m4x4
-identity_create(void)
+m4x4_identity_create(void)
 {
 	m4x4 R =
 	{
@@ -430,9 +430,9 @@ m4x4_rotation_y_create(f32 angle)
 {
 	m4x4 R =
 	{
-		{{cos(angle),0, -1.0f * sin(angle), 0},
+		{{cos(angle), 0 , sin(angle), 0},
 		{0, 1, 0, 0},
-		{sin(angle), 0, cos(angle), 0},
+		{-1.0f * sin(angle), 0, cos(angle), 0},
 		{0, 0, 0, 1}},
 	};
 	return(R);
@@ -457,8 +457,8 @@ m4x4_rotation_x_create(f32 angle)
 	m4x4 R =
 	{
 		{{1, 0, 0, 0},
-		{0, cos(angle), -sin(angle), 0},
-		{0, sin(angle), cos(angle), 0},
+		{0, cos(angle), sin(angle), 0},
+		{0, -1.0f * sin(angle), cos(angle), 0},
 		{0, 0, 0, 1}},
 	};
 	return(R);

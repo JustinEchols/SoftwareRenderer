@@ -52,12 +52,14 @@ typedef struct
 
 enum
 {
+	BUTTON_W,
+	BUTTON_S,
+	BUTTON_A,
+	BUTTON_D,
 	BUTTON_UP,
 	BUTTON_DOWN,
 	BUTTON_LEFT,
 	BUTTON_RIGHT,
-	BUTTON_IN,
-	BUTTON_OUT,
 	BUTTON_1,
 	BUTTON_2,
 	BUTTON_3,
@@ -198,13 +200,13 @@ struct m4x4
 
 typedef struct
 {
-	v3f Min;
-	v3f Max;
+	v4f Min;
+	v4f Max;
 } rectangle;
 
 typedef struct
 {
-	v2f Center;
+	v4f Center;
 	f32 radius;
 } circle;
 
@@ -232,6 +234,14 @@ typedef struct
 	v4f Center;
 	v2f Dim;
 } cube;
+
+typedef struct
+{
+	f32 x;
+	f32 x_step;
+	s32 y_start;
+	s32 y_end;
+} edge;
 
 #define SOFTWARE_RENDERER_TYPES_H
 #endif

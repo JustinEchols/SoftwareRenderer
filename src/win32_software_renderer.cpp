@@ -23,6 +23,7 @@ global_variable LARGE_INTEGER tick_frequency;
 global_variable input Input;
 
 
+#if 0
 internal void
 scan_buffer_fill_between_vertices(scan_buffer *ScanBuffer, v3f VertexMin, v3f VertexMax, b32 which_side)
 {
@@ -43,7 +44,6 @@ scan_buffer_fill_between_vertices(scan_buffer *ScanBuffer, v3f VertexMin, v3f Ve
 
 	// Distance between real y and first scanline
 	f32 yprestep = y_start - VertexMin.y;
-	//f32 x_current = (f32)x_start;
 
 	f32 x_current = VertexMin.x + yprestep * x_step;
 
@@ -53,6 +53,7 @@ scan_buffer_fill_between_vertices(scan_buffer *ScanBuffer, v3f VertexMin, v3f Ve
 		x_current += x_step;
 	}
 }
+
 
 internal void
 scan_buffer_fill_triangle(scan_buffer *ScanBuffer, triangle *Triangle)
@@ -128,6 +129,7 @@ scan_buffer_fill_triangle(scan_buffer *ScanBuffer, triangle *Triangle)
 	scan_buffer_fill_between_vertices(ScanBuffer, *mid, *max, which_side);
 	scan_buffer_fill_between_vertices(ScanBuffer, *min, *mid, which_side);
 }
+#endif
 
 internal u32
 color_convert_v3f_to_u32(v3f Color)
@@ -258,15 +260,6 @@ line_draw_dda(win32_back_buffer *Win32BackBuffer, v2f P1, v2f P2, v3f Color)
 		pixel_set(Win32BackBuffer, PixelPos, Color);
 	}
 }
-
-#if 0
-	internal void
-cube_draw(win32_back_buffer *Win32BackBuffer, cube Cube, v3f Color)
-{
-	line_draw_dda(Win32BackBuffer, P0)
-}
-#endif
-
 
 internal void
 win32_back_buffer_resize(win32_back_buffer *Win32BackBuffer, int width, int height)
@@ -408,7 +401,7 @@ rectangle_draw(win32_back_buffer *Win32BackBuffer, rectangle R, v3f Color)
 //TODO(Justin): This is not rendering properly. Moving in and out in the z
 //direction warps the axes.
 
-#if 1
+#if 0
 internal void
 axis_draw(win32_back_buffer *Win32BackBuffer, m4x4 M, v4f Position)
 {
@@ -441,6 +434,138 @@ axis_draw(win32_back_buffer *Win32BackBuffer, m4x4 M, v4f Position)
 	line_draw_dda(Win32BackBuffer, FragmentOrigin.xy, FragmentZ.xy, Color);
 }
 #endif
+
+
+internal edge
+edge_create_from_v3f(v3f VertexMin, v3f VertexMax)
+{
+	edge Result;
+	Result.y_start = (s32)ceil(VertexMin.y);
+	Result.y_end = (s32)ceil(VertexMax.y);
+
+	f32 y_dist = VertexMax.y - VertexMin.y;
+	f32 x_dist = VertexMax.x - VertexMin.x;
+
+	if (y_dist < 0) {
+		Result.x_step = x_dist;
+	} else {
+		Result.x_step = (f32)x_dist / (f32)y_dist;
+	}
+
+	// Distance between real y and first scanline
+	f32 yprestep = Result.y_start - VertexMin.y;
+
+	Result.x = VertexMin.x + yprestep * Result.x_step;
+	return(Result);
+}
+
+internal void
+scanline_draw(win32_back_buffer *Win32BackBuffer, edge Left, edge Right, s32 scanline)
+{
+	s32 x_min = (s32)ceil(Left.x);
+	s32 x_max = (s32)ceil(Right.x);
+
+	u8 *pixel_row = (u8 *)Win32BackBuffer->memory + Win32BackBuffer->stride * scanline + Win32BackBuffer->bytes_per_pixel * x_min;
+	u32 *pixel = (u32 *)pixel_row;
+	for (s32 i = x_min; i < x_max; i++) {
+		*pixel++ = 0xFFFFFFFF;
+	}
+}
+
+internal void
+triangle_scan(win32_back_buffer *Win32BackBuffer, triangle *Triangle)
+{
+	v3f tmp = {};
+	v3f *min = &Triangle->Vertices[0].xyz;
+	v3f *mid = &Triangle->Vertices[1].xyz;
+	v3f *max = &Triangle->Vertices[2].xyz;
+
+	if (min->y > max->y) {
+		tmp = *min;
+		*min = *max;
+		*max = tmp;
+	}
+	if (mid->y >  max->y) {
+		tmp = *mid;
+		*mid = *max;
+		*max = tmp;
+	}
+	if (min->y > mid->y) {
+		tmp = *min;
+		*min = *mid;
+		*mid = tmp;
+	}
+
+	edge BottomToTop = edge_create_from_v3f(*min, *max);
+	edge MiddleToTop = edge_create_from_v3f(*mid, *max);
+	edge BottomToMiddle = edge_create_from_v3f(*min, *mid);
+
+
+	f32 v0_x = min->x - max->x;
+	f32 v0_y = min->y - max->y;
+
+	f32 v1_x = mid->x - max->x;
+	f32 v1_y = mid->y - max->y;
+
+	f32 area_double_signed = v0_x * v1_y - v1_x * v0_y;
+
+	b32 oriented_right;
+	if (area_double_signed > 0) {
+		// BottomToTop is on the left
+		// Two edges on the right
+		oriented_right = true;
+	} else {
+		// BottomToTop is on the right 
+		// Two edges on the left 
+		oriented_right = false;
+	}
+	b32 which_side;
+	if (oriented_right) {
+		which_side = false;
+	} else {
+		which_side = true;
+	}
+
+	edge Left = BottomToTop;
+	edge Right = BottomToMiddle;
+	if (!oriented_right) {
+		// Left oriented so swap edges.
+		edge Temp = Left;
+		Left = Right;
+		Right = Temp;
+	}
+
+	int y_start = BottomToMiddle.y_start;
+	int y_end = BottomToMiddle.y_end;
+	for (int j = y_start; j < y_end; j++) {
+		scanline_draw(Win32BackBuffer, Left, Right, j);
+		Left.x += Left.x_step;
+		Right.x += Right.x_step;
+	}
+
+
+	Left = BottomToTop;
+	Right = MiddleToTop;
+
+	// Offset the starting x value of the bottom edge so that it is at the
+	// correct x value to render the top half of the triangle
+	Left.x += (MiddleToTop.y_start - BottomToTop.y_start) * Left.x_step;
+
+	if (!oriented_right) {
+		// Left oriented so swap edges.
+		edge Temp = Left;
+		Left = Right;
+		Right = Temp;
+	}
+
+	y_start = MiddleToTop.y_start;
+	y_end = MiddleToTop.y_end;
+	for (int j = y_start; j < y_end; j++) {
+		scanline_draw(Win32BackBuffer, Left, Right, j);
+		Left.x += Left.x_step;
+		Right.x += Right.x_step;
+	}
+}
 
 
 int CALLBACK
@@ -489,8 +614,8 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 			v3f CameraUp = {0.0f, 1.0f, 0.0f};
 
 
-			v3f Camera2Pos = {1.0f, 1.0f, 1.0f};
-			v3f Camera2Direction = {0.0f, 0.0f, 1.0f};
+			v3f Camera2Pos = {2.0f, 0.0f, -1.0f};
+			v3f Camera2Direction = {-1.0f, 0.0f, 0.0f};
 			v3f Camera2Up = {0.0f, 1.0f, 0.0f};
 
 			v3f CameraAbovePos = {0.0f, 5.0f, -1.0f};
@@ -500,9 +625,9 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 			// TODO(Justin): changing the camera to produce a different viewing
 			// perspective does not produce the expected result. For eaxmple,.
 			// viewing the left down the negative x axis produces an inverted y
-			// axis. fix debug this...
+			// axis. fix debug this... 
 			//
-			// NOTE(Justin): For a direction vector positive z values are
+			// Conclusion: for a direction vector positive z values are
 			// looking down the z axis and POSITIONS get more and more negative.
 			// THIS IS CONFUSING. The direction you are looking has a positive z
 			// value but the positions are negative :(
@@ -517,27 +642,23 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 			f32 f = 2.0f;
 
 			m4x4 MapToPersp = m4x4_perspective_projection_create(l, r, b, t, n, f);
-
 			m4x4 MapToScreenSpace = m4x4_screen_space_map_create(Win32BackBuffer.width, Win32BackBuffer.height);
 			m4x4 M = MapToScreenSpace * MapToPersp * MapToCamera;
 
+			m4x4 RotateZ = m4x4_identity_create();
+			m4x4 Identity = m4x4_identity_create();
+
 			srand(2023);
-#if 1
+
 			triangle Triangles[3];
+			Triangles[0].Vertices[0] = {-0.5f, -0.5f, -1.0f, 1.0f};
+			Triangles[0].Vertices[1] = {0.5f, 0.0f, -1.0f, 1.0f};
+			Triangles[0].Vertices[2] = {0.0f, 0.5f, -1.0f, 1.0f};
+			Triangles[0].Color = Color;
 
-			for(u32 i = 0; i < ARRAY_COUNT(Triangles); i++) {
-				Triangles[i] = triangle_rand_init();
-
-			}
-
-			triangle Fragment;
-			Fragment = Triangles[0];
-			for (u32 i = 0; i < 3; i++) {
-				Fragment.Vertices[i] = M * Fragment.Vertices[i];
-				Fragment.Vertices[i] = (1.0f / Fragment.Vertices[i].w ) * Fragment.Vertices[i];
-			}
-			scan_buffer_fill_triangle(&ScanBuffer, &Fragment);
-#endif
+			circle Circle;
+			Circle.Center = {0.0f, 0.0f, -1.0f, 1.0f};
+			Circle.radius = 10.0f;
 
 			GLOBAL_RUNNING = true;
 
@@ -567,27 +688,35 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 								switch (vk_code) {
 									case 'W':
 									{
-										Input.Buttons[BUTTON_UP].is_down = is_down;
+										Input.Buttons[BUTTON_W].is_down = is_down;
 									} break;
 									case 'S':
 									{
-										Input.Buttons[BUTTON_DOWN].is_down = is_down;
+										Input.Buttons[BUTTON_S].is_down = is_down;
 									} break;
 									case 'A':
 									{
-										Input.Buttons[BUTTON_LEFT].is_down = is_down;
+										Input.Buttons[BUTTON_A].is_down = is_down;
 									} break;
 									case 'D':
 									{
-										Input.Buttons[BUTTON_RIGHT].is_down = is_down;
+										Input.Buttons[BUTTON_D].is_down = is_down;
 									} break;
 									case VK_UP:
 									{
-										Input.Buttons[BUTTON_IN].is_down = is_down;
+										Input.Buttons[BUTTON_UP].is_down = is_down;
 									} break;
 									case VK_DOWN:
 									{
-										Input.Buttons[BUTTON_OUT].is_down = is_down;
+										Input.Buttons[BUTTON_DOWN].is_down = is_down;
+									} break;
+									case VK_LEFT:
+									{
+										Input.Buttons[BUTTON_LEFT].is_down = is_down;
+									} break;
+									case VK_RIGHT:
+									{
+										Input.Buttons[BUTTON_RIGHT].is_down = is_down;
 									} break;
 									case 0x31:
 									{
@@ -620,6 +749,8 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 					}
 				}
 
+
+#if 0
 				// Resize the scan buffer upon a change in the window size
 				if (ScanBuffer.height != Win32BackBuffer.height) {
 					if (ScanBuffer.memory) {
@@ -627,69 +758,80 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 					}
 					ScanBuffer.memory = VirtualAlloc(0, Win32BackBuffer.height * 2 * sizeof(u32), (MEM_COMMIT | MEM_RESERVE), PAGE_READWRITE);
 					ScanBuffer.height = Win32BackBuffer.height;
-
 					MapToScreenSpace = m4x4_screen_space_map_create(Win32BackBuffer.width, Win32BackBuffer.height);
 				}
+#endif
 
 				//
 				// NOTE(Justin): Input/ Do something smarter here...
 				//
 
-				if (Input.Buttons[BUTTON_UP].is_down) {
+				if (Input.Buttons[BUTTON_W].is_down) {
 					v3f Shift = {0.0f, 1.0f * time_delta, 0.0f};
 					if (using_camera_one) {
 						CameraPos += Shift;
 					} else if (using_camera_two) {
 						Camera2Pos += Shift;
-					} else if (using_camera_three) {
-						CameraAbovePos += Shift;
+					} else {
+						CameraAbovePos += -1.0f * Shift;
 					}
 				}
-				if (Input.Buttons[BUTTON_DOWN].is_down) {
+				if (Input.Buttons[BUTTON_S].is_down) {
 					v3f Shift = {0.0f, -1.0f * time_delta, 0.0f};
 					if (using_camera_one) {
 						CameraPos += Shift;
 					} else if (using_camera_two) {
 						Camera2Pos += Shift;
-					} else if (using_camera_three) {
-						CameraAbovePos += Shift;
+					} else {
+						CameraAbovePos += -1.0f * Shift;
 					}
 				}
-				if (Input.Buttons[BUTTON_LEFT].is_down) {
+				if (Input.Buttons[BUTTON_A].is_down) {
 					v3f Shift = {-1.0f * time_delta, 0.0f, 0.0f};
 					if (using_camera_one) {
 						CameraPos += Shift;
 					} else if (using_camera_two) {
 						Camera2Pos += Shift;
-					} else if (using_camera_three) {
+					} else {
 						CameraAbovePos += Shift;
 					}
 				}
-				if (Input.Buttons[BUTTON_RIGHT].is_down) {
+				if (Input.Buttons[BUTTON_D].is_down) {
 					v3f Shift = {1.0f * time_delta, 0.0f, 0.0f};
 					if (using_camera_one) {
 						CameraPos += Shift;
 					} else if (using_camera_two) {
 						Camera2Pos += Shift;
-					} else if (using_camera_three) {
+					} else {
 						CameraAbovePos += Shift;
 					}
 				}
-				if (Input.Buttons[BUTTON_IN].is_down) {
+				if (Input.Buttons[BUTTON_UP].is_down) {
 					v3f Shift = {0.0f, 0.0f, -1.0f * time_delta};
 					if (using_camera_one) {
 						CameraPos += Shift;
+					} else if (using_camera_two) {
+						Camera2Pos += Shift;
+					} else {
+						CameraAbovePos += Shift;
 					}
 				}
-				if (Input.Buttons[BUTTON_OUT].is_down) {
+				if (Input.Buttons[BUTTON_DOWN].is_down) {
 					v3f Shift = {0.0f, 0.0f, 1.0f * time_delta};
 					if (using_camera_one) {
 						CameraPos += Shift;
 					} else if (using_camera_two) {
 						Camera2Pos += Shift;
-					} else if (using_camera_three) {
+					} else {
 						CameraAbovePos += Shift;
 					}
+				}
+				if (Input.Buttons[BUTTON_LEFT].is_down) {
+					RotateZ = m4x4_rotation_z_create(time_delta);
+				} else if (Input.Buttons[BUTTON_RIGHT].is_down) {
+					RotateZ = m4x4_rotation_z_create(-1.0f * time_delta);
+				} else {
+					RotateZ = Identity;
 				}
 
 				if (Input.Buttons[BUTTON_1].is_down) {
@@ -702,6 +844,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 					using_camera_two = true;
 					using_camera_three = false;
 				}
+
 				if (Input.Buttons[BUTTON_3].is_down) {
 					using_camera_one = false;
 					using_camera_two = false;
@@ -709,7 +852,10 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 				}
 
 				//
-				// NOTE(Justin): Update camera transform.
+				// NOTE(Justin): Update camera transform. Only need to do this
+				// whenever a switch happens. Not every frame. TODO(Justin): Fix
+				// this so that we do it only whenver a change happens. Do it
+				// inside the if-else block input logic?
 				//
 
 				if (using_camera_one) {
@@ -724,63 +870,84 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 				// NOTE(Justin): Render axes
 				//
 
-				v4f tmp = {0.0f, 0.0f, -1.0f, 1};
-#if 1
+				v4f Position = {0.0f, 0.0f, -1.0f, 1};
 
-				tmp = MapToScreenSpace * MapToPersp * MapToCamera * tmp;
-				tmp = (1.0f / tmp.w) * tmp;
+				Position = MapToScreenSpace * MapToPersp * MapToCamera * Position;
+				Position = (1.0f / Position.w) * Position;
 
 
-				v4f OffsetZ = {0.0f, 0.0f, -1.0f, 0.0f};
-				v4f tmp2 = {0.0f, 0.0f, -2.0f, 1};
-				//v4f tmp2 = Position + OffsetZ;
-				tmp2 = MapToScreenSpace * MapToPersp * MapToCamera * tmp2;
-				tmp2 = (1.0f / tmp2.w) * tmp2;
+				v4f Position2 = {0.0f, 0.0f, -2.0f, 1};
+				Position2 = MapToScreenSpace * MapToPersp * MapToCamera * Position2;
+				Position2 = (1.0f / Position2.w) * Position2;
 
 				Color = {0.0f, 0.0f, 1.0f};
-				line_draw_dda(&Win32BackBuffer, tmp.xy, tmp2.xy, Color);
+				line_draw_dda(&Win32BackBuffer, Position.xy, Position2.xy, Color);
 
-
-
-				tmp2 = {1.0f, 0.0f, -1.0f, 1};
-				tmp2 = MapToScreenSpace * MapToPersp * MapToCamera * tmp2;
-				tmp2 = (1.0f / tmp2.w) * tmp2;
+				Position2 = {1.0f, 0.0f, -1.0f, 1};
+				Position2 = MapToScreenSpace * MapToPersp * MapToCamera * Position2;
+				Position2 = (1.0f / Position2.w) * Position2;
 
 				Color = {1.0f, 0.0f, 0.0f};
-				line_draw_dda(&Win32BackBuffer, tmp.xy, tmp2.xy, Color);
+				line_draw_dda(&Win32BackBuffer, Position.xy, Position2.xy, Color);
 
-				tmp2 = {0.0f, 1.0f, -1.0f, 1};
-				tmp2 = MapToScreenSpace * MapToPersp * MapToCamera * tmp2;
-				tmp2 = (1.0f / tmp2.w) * tmp2;
+				Position2 = {0.0f, 1.0f, -1.0f, 1};
+				Position2 = MapToScreenSpace * MapToPersp * MapToCamera * Position2;
+				Position2 = (1.0f / Position2.w) * Position2;
 
 				Color = {0.0f, 1.0f, 0.0f};
-				line_draw_dda(&Win32BackBuffer, tmp.xy, tmp2.xy, Color);
-#endif
+				line_draw_dda(&Win32BackBuffer, Position.xy, Position2.xy, Color);
 
-
-#if 1
-				
 				//
 				// NOTE(Justin): Render triangle
 				//
 
-				m4x4 RotateZ = m4x4_rotation_z_create(PI32 * time_delta);
+
+				//m4x4 RotateZ = m4x4_rotation_z_create(time_delta);// * (PI32 / 4.0f));
+				m4x4 RotateY = m4x4_rotation_y_create(time_delta * (PI32 / 4.0f));
+				m4x4 RotateX = m4x4_rotation_x_create(time_delta * (PI32 / 4.0f));
+				m4x4 Rotate = RotateZ * RotateY * RotateX;
 				triangle Fragment;
 				for (u32 i = 0; i < 3; i++) {
-					Triangles[0].Vertices[i] = RotateZ * Triangles[0].Vertices[i];
+					// NOTE(Justin): We apply any rigid body transformations to
+					// the triangle itself. After applying the transformations
+					// we obtain a copy of the triangle then apply the viewing
+					// transformations and finally the w divide to the
+					// copy. If we apply the viewing transformations and
+					// w divide to the orignal triangle we can no
+					// longer use the data of the triangle unless we undo the
+					// w divide and viewing transformation to convert
+					// the triangle data back to the proper space. So it is easy
+					// to just obtain a copy of the triagnle and apply the
+					// viewing and division operations on the triangle and copy
+					// this data to the frame buffer. This is the reason for
+					// creating the triagnle called Fragment.
+
+					Triangles[0].Vertices[i] = RotateY * Triangles[0].Vertices[i];
+					
 					Fragment.Vertices[i] = MapToScreenSpace * MapToPersp * MapToCamera * Triangles[0].Vertices[i];
 					Fragment.Vertices[i] = (1.0f / Fragment.Vertices[i].w) * Fragment.Vertices[i];
 				}
 
-				scan_buffer_fill_triangle(&ScanBuffer, &Fragment);
-				scan_buffer_draw_shape(&Win32BackBuffer, &ScanBuffer, Fragment.Vertices[0].y, Fragment.Vertices[2].y, Triangles[0].Color);
+				Circle.Center = RotateY * Circle.Center;
+				circle FragmentCircle;
+				FragmentCircle.Center = MapToScreenSpace * MapToPersp * MapToCamera * Circle.Center;
+				FragmentCircle.Center = (1.0f / FragmentCircle.Center.w) * FragmentCircle.Center;
+				FragmentCircle.radius = (1.0f / FragmentCircle.Center.w) * Circle.radius;
+				//FragmentCircle.radius = Circle.radius;
+				Color = {1.0f, 1.0f, 1.0f};
+				
+				pixel_set(&Win32BackBuffer, FragmentCircle.Center.xy, Color);
+				//circle_draw(&Win32BackBuffer, FragmentCircle, Color);
+
+
+#if 1
+				triangle_scan(&Win32BackBuffer, &Fragment);
 
 				Color = {1.0f, 1.0f, 1.0f};
 				for (u32 i = 0; i < 3; i++) {
-					line_draw_dda(&Win32BackBuffer, tmp.xy, Fragment.Vertices[i].xy, Color);
+					line_draw_dda(&Win32BackBuffer, Position.xy, Fragment.Vertices[i].xy, Color);
 				}
 #endif
-
 				StretchDIBits(DeviceContext,
 						0, 0, Win32BackBuffer.width, Win32BackBuffer.height,
 						0, 0, Win32BackBuffer.width, Win32BackBuffer.height,
@@ -800,4 +967,3 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 	}
 	return(0);
 }
-
