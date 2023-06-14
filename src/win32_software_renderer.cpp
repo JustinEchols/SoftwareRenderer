@@ -331,7 +331,6 @@ lerp_color(v3f ColorA, v3f ColorB, f32 t)
 internal void
 circle_draw(win32_back_buffer *Win32BackBuffer, circle Circle, v3f Color)
 {
-	// Bounding Box
 	u32 x_min = round_f32_to_u32(Circle.Center.x - Circle.radius);
 	u32 x_max = round_f32_to_u32(Circle.Center.x + Circle.radius);
 
@@ -339,7 +338,7 @@ circle_draw(win32_back_buffer *Win32BackBuffer, circle Circle, v3f Color)
 	u32 y_max = round_f32_to_u32(Circle.Center.y + Circle.radius);
 
 	f32 distance_squared = 0.0f;
-	f32 radius_sqaured = SQUARE(Circle.radius);// * Circle.radius;
+	f32 radius_sqaured = SQUARE(Circle.radius);
 
 	f32 test_x, test_y;
 	v2f test = {0.0f, 0.0f};
@@ -348,7 +347,7 @@ circle_draw(win32_back_buffer *Win32BackBuffer, circle Circle, v3f Color)
 			test_x = Circle.Center.x - x;
 			test_y = Circle.Center.y - y;
 
-			distance_squared = SQUARE(test_x) + SQUARE(test_y);//test_x * test_x + test_y * test_y;
+			distance_squared = SQUARE(test_x) + SQUARE(test_y);
 			if (distance_squared <= radius_sqaured) {
 				test = {(f32)x, (f32)y};
 				pixel_set(Win32BackBuffer, test, Color);
@@ -384,37 +383,38 @@ rectangle_draw(win32_back_buffer *Win32BackBuffer, rectangle R, v3f Color)
 //TODO(Justin): This is not rendering properly. Moving in and out in the z
 //direction warps the axes.
 
-#if 0
+#if 1
 internal void
 axis_draw(win32_back_buffer *Win32BackBuffer, m4x4 M, v4f Position)
 {
-	v4f OffsetX = {0.5f, 0.0f, 0.0f, 0.0f};
-	v4f OffsetY = {0.0f, 0.5f, 0.0f, 0.0f};
-	v4f OffsetZ = {0.0f, 0.0f, -0.5f, 0.0f};
+	v4f Position2 = {0.0f, 0.0f, Position.z - 1.0f, 1};
+	v4f Position3 = {Position.x + 1.0f, 0.0f, Position.z, 1};
+	v4f Position4 = {0.0f, Position.y + 1.0f, Position.z, 1};
 
-	v4f FragmentOrigin = M * Position;
-	FragmentOrigin =  (1.0f / FragmentOrigin.w) * FragmentOrigin;
+	Position = M * Position;
+	Position = (1.0f / Position.w) * Position;
 
-	v4f FragmentX = Position + OffsetX;
-	FragmentX = M * FragmentX;
-	FragmentX =  (1.0f / FragmentX.w) * FragmentX;
 
-	v4f FragmentY = Position + OffsetY;
-	FragmentY = M * FragmentY;
-	FragmentY =  (1.0f / FragmentY.w) * FragmentY;
+	Position2 = M * Position2;
+	Position2 = (1.0f / Position2.w) * Position2;
 
-	v4f FragmentZ = Position + OffsetZ;
-	FragmentZ = M * FragmentZ;
-	FragmentZ =  (1.0f / FragmentZ.w) * FragmentZ;
+	v3f Color = {0.0f, 0.0f, 1.0f};
+	line_draw_dda(Win32BackBuffer, Position.xy, Position2.xy, Color);
 
-	v3f Color = {1.0f, 0.0f, 0.0f};
-	line_draw_dda(Win32BackBuffer, FragmentOrigin.xy, FragmentX.xy, Color);
-	
+
+	Position3 = M * Position3;
+	Position3 = (1.0f / Position3.w) * Position3;
+
+	Color = {1.0f, 0.0f, 0.0f};
+	line_draw_dda(Win32BackBuffer, Position.xy, Position3.xy, Color);
+
+
+	Position4 = M * Position4;
+	Position4 = (1.0f / Position4.w) * Position4;
+
 	Color = {0.0f, 1.0f, 0.0f};
-	line_draw_dda(Win32BackBuffer, FragmentOrigin.xy, FragmentY.xy, Color);
+	line_draw_dda(Win32BackBuffer, Position.xy, Position4.xy, Color);
 
-	Color = {0.0f, 0.0f, 1.0f};
-	line_draw_dda(Win32BackBuffer, FragmentOrigin.xy, FragmentZ.xy, Color);
 }
 #endif
 
@@ -616,6 +616,8 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 			// value but the positions are negative :(
 
 			m4x4 MapToCamera = m4x4_camera_map_create(CameraPos, CameraDirection, CameraUp);
+			m4x4 MapToCamera2 = m4x4_camera_map_create(Camera2Pos, Camera2Direction, Camera2Up);
+			m4x4 MapToCameraAbove = m4x4_camera_map_create(CameraAbovePos, CameraAboveDirection, CameraAboveUp);
 
 			f32 l = -1.0f;
 			f32 r = 1.0f;
@@ -649,8 +651,10 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 			b32 using_camera_two = false;
 			b32 using_camera_three = false;
 
+			b32 last_camera = using_camera_one;
 
 			f32 time_delta = 0.0f;
+			f32 step = 0.0f;
 
 			LARGE_INTEGER tick_count_before;
 			QueryPerformanceCounter(&tick_count_before);
@@ -843,7 +847,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 					MapToCamera = m4x4_camera_map_create(CameraPos, CameraDirection, CameraUp);
 				} else if (using_camera_two) {
 					MapToCamera = m4x4_camera_map_create(Camera2Pos, Camera2Direction, Camera2Up);
-				} else if (using_camera_three) {
+				} else {
 					MapToCamera = m4x4_camera_map_create(CameraAbovePos, CameraAboveDirection, CameraAboveUp);
 				}
 
@@ -851,32 +855,22 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 				// NOTE(Justin): Render axes
 				//
 
-				v4f Position = {0.0f, 0.0f, -1.0f, 1};
+				//v4f Position = {0.0f, 0.0f, -1.0f, 1};
+				
+				step += time_delta * 2 * PI32;
+				if (step >= 2 * PI32) {
+					step = 0.0f;
+				}
+#if 1
+				M = MapToScreenSpace * MapToPersp * MapToCamera;
+				for (int i = 1; i < 21; i++) {
+					v4f Position = {0.0f, 0.0f, -i, 1};
+					Position = RotateZ * Position;
+					axis_draw(&Win32BackBuffer, M, Position);
+				}
 
-				Position = MapToScreenSpace * MapToPersp * MapToCamera * Position;
-				Position = (1.0f / Position.w) * Position;
 
-
-				v4f Position2 = {0.0f, 0.0f, -2.0f, 1};
-				Position2 = MapToScreenSpace * MapToPersp * MapToCamera * Position2;
-				Position2 = (1.0f / Position2.w) * Position2;
-
-				Color = {0.0f, 0.0f, 1.0f};
-				line_draw_dda(&Win32BackBuffer, Position.xy, Position2.xy, Color);
-
-				Position2 = {1.0f, 0.0f, -1.0f, 1};
-				Position2 = MapToScreenSpace * MapToPersp * MapToCamera * Position2;
-				Position2 = (1.0f / Position2.w) * Position2;
-
-				Color = {1.0f, 0.0f, 0.0f};
-				line_draw_dda(&Win32BackBuffer, Position.xy, Position2.xy, Color);
-
-				Position2 = {0.0f, 1.0f, -1.0f, 1};
-				Position2 = MapToScreenSpace * MapToPersp * MapToCamera * Position2;
-				Position2 = (1.0f / Position2.w) * Position2;
-
-				Color = {0.0f, 1.0f, 0.0f};
-				line_draw_dda(&Win32BackBuffer, Position.xy, Position2.xy, Color);
+#endif
 
 				//
 				// NOTE(Justin): Render triangle
@@ -920,10 +914,9 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 				FragmentCircle.radius = (1.0f / FragmentCircle.Center.w) * Circle.radius;
 				Color = {1.0f, 1.0f, 1.0f};
 				
-				circle_draw(&Win32BackBuffer, FragmentCircle, Color);
+//				circle_draw(&Win32BackBuffer, FragmentCircle, Color);
 
-
-#if 1
+#if 0
 				triangle_scan(&Win32BackBuffer, &Fragment);
 
 				Color = {1.0f, 1.0f, 1.0f};

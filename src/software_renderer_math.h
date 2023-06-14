@@ -332,7 +332,78 @@ operator *(f32 c, v4f A)
 	return(Result);
 }
 
+//
+// NOTE(Justin): m2x2 operations
+//
 
+internal m2x2
+operator *(m2x2 A, m2x2 B)
+{
+	// NOTE(Justin): Instructional, NOT optimized.
+	m2x2 R = {};
+
+	// For each row of A
+	for (int r = 0; r <= 1; r++) {
+
+		// For each col of B
+		for (int c = 0; c <= 1; c++) {
+
+			// Mul col of A by row of B (dot product)
+			for (int i = 0; i <= 1; i++) {
+				R.e[r][c] += A.e[r][i] * B.e[i][c];
+			}
+		}
+	}
+	return(R);
+}
+
+internal v2f
+transform(m4x4 A, v2f V)
+{
+	v2f R;
+
+	// NOTE(Justin): Instructional, NOT optimized.
+	R.x = A.e[0][0] * V.x + A.e[0][1] * V.y;
+	R.y = A.e[1][0] * V.x + A.e[1][1] * V.y;
+
+	return(R);
+}
+
+inline v2f
+operator *(m4x4 A, v2f V)
+{
+	v2f R = transform(A, V);//v4f_create_from_v3f(V, 1.0f)).xyz;
+	return(R);
+}
+
+internal f32
+m2x2_det(m2x2 A)
+{
+	f32 Result = 0;
+	Result = A.e[0][0] * A.e[1][1] - A.e[0][1] * A.e[1][0];
+	return(Result);
+}
+
+internal m2x2
+m2x2_adjoint_create(m2x2 A)
+{
+	/*
+	 * |a b|
+	 * |c d|
+	 *
+	 * |d -b|
+	 * |-c a|
+	 *
+	 * */
+
+	m2x2 Result;
+	Result.e[0][0] = A.e[1][1];
+	Result.e[1][1] = A.e[0][0];
+	Result.e[0][1] = -A.e[0][1];
+	Result.e[1][0] = - A.e[1][0];
+
+	return(Result);
+}
 //
 // NOTE(Justin): m4x4 operations
 //

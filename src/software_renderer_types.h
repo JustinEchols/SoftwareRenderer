@@ -192,6 +192,12 @@ union v4f
 
 
 
+struct m2x2
+{
+	// NOTE(Justin): Stored in ROW MAJOR order i.e. e[ROW][COL]
+	f32 e[2][2];
+};
+
 struct m4x4
 {
 	// NOTE(Justin): Stored in ROW MAJOR order i.e. e[ROW][COL]
