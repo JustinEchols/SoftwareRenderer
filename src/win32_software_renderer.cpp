@@ -44,24 +44,24 @@ internal void
 scan_buffer_fill_triangle(scan_buffer *ScanBuffer, triangle *Triangle)
 {
 	v3f tmp = {};
-	v3f *min = &Triangle->Vertices[0].xyz;
-	v3f *mid = &Triangle->Vertices[1].xyz;
-	v3f *max = &Triangle->Vertices[2].xyz;
+	v3f min = &Triangle->Vertices[0].xyz;
+	v3f mid = &Triangle->Vertices[1].xyz;
+	v3f max = &Triangle->Vertices[2].xyz;
 
-	if (min->y > max->y) {
-		tmp = *min;
-		*min = *max;
-		*max = tmp;
+	if (min.y > max.y) {
+		tmp = min;
+		min = max;
+		max = tmp;
 	}
-	if (mid->y >  max->y) {
-		tmp = *mid;
-		*mid = *max;
-		*max = tmp;
+	if (mid.y >  max.y) {
+		tmp = mid;
+		mid = max;
+		max = tmp;
 	}
-	if (min->y > mid->y) {
-		tmp = *min;
-		*min = *mid;
-		*mid = tmp;
+	if (min.y > mid.y) {
+		tmp = min;
+		min = mid;
+		mid = tmp;
 	}
 
 	//
@@ -72,11 +72,11 @@ scan_buffer_fill_triangle(scan_buffer *ScanBuffer, triangle *Triangle)
 	// we are using the sign to determine the orientation of the triangle.
 	//
 
-	f32 v0_x = min->x - max->x;
-	f32 v0_y = min->y - max->y;
+	f32 v0_x = min.x - max.x;
+	f32 v0_y = min.y - max.y;
 
-	f32 v1_x = mid->x - max->x;
-	f32 v1_y = mid->y - max->y;
+	f32 v1_x = mid.x - max.x;
+	f32 v1_y = mid.y - max.y;
 
 	f32 area_double_signed = v0_x * v1_y - v1_x * v0_y;
 
@@ -108,11 +108,11 @@ scan_buffer_fill_triangle(scan_buffer *ScanBuffer, triangle *Triangle)
 		which_side = true;
 	}
 
-	scan_buffer_fill_between_vertices(ScanBuffer, *min, *max, which_side);
+	scan_buffer_fill_between_vertices(ScanBuffer, min, max, which_side);
 
 	which_side = !which_side;
-	scan_buffer_fill_between_vertices(ScanBuffer, *mid, *max, which_side);
-	scan_buffer_fill_between_vertices(ScanBuffer, *min, *mid, which_side);
+	scan_buffer_fill_between_vertices(ScanBuffer, mid, max, which_side);
+	scan_buffer_fill_between_vertices(ScanBuffer, min, mid, which_side);
 }
 #endif
 
@@ -455,40 +455,41 @@ scanline_draw(win32_back_buffer *Win32BackBuffer, edge Left, edge Right, s32 sca
 	}
 }
 
+#if 0
 internal void
 triangle_scan(win32_back_buffer *Win32BackBuffer, triangle *Triangle)
 {
 	v3f tmp = {};
-	v3f *min = &Triangle->Vertices[0].xyz;
-	v3f *mid = &Triangle->Vertices[1].xyz;
-	v3f *max = &Triangle->Vertices[2].xyz;
+	v3f min = &Triangle->Vertices[0].xyz;
+	v3f mid = &Triangle->Vertices[1].xyz;
+	v3f max = &Triangle->Vertices[2].xyz;
 
-	if (min->y > max->y) {
-		tmp = *min;
-		*min = *max;
-		*max = tmp;
+	if (min.y > max.y) {
+		tmp = min;
+		min = max;
+		max = tmp;
 	}
-	if (mid->y >  max->y) {
-		tmp = *mid;
-		*mid = *max;
-		*max = tmp;
+	if (mid.y >  max.y) {
+		tmp = mid;
+		mid = max;
+		max = tmp;
 	}
-	if (min->y > mid->y) {
-		tmp = *min;
-		*min = *mid;
-		*mid = tmp;
+	if (min.y > mid.y) {
+		tmp = min;
+		min = mid;
+		mid = tmp;
 	}
 
-	edge BottomToTop = edge_create_from_v3f(*min, *max);
-	edge MiddleToTop = edge_create_from_v3f(*mid, *max);
-	edge BottomToMiddle = edge_create_from_v3f(*min, *mid);
+	edge BottomToTop = edge_create_from_v3f(min, max);
+	edge MiddleToTop = edge_create_from_v3f(mid, max);
+	edge BottomToMiddle = edge_create_from_v3f(min, mid);
 
 
-	f32 v0_x = min->x - max->x;
-	f32 v0_y = min->y - max->y;
+	f32 v0_x = min.x - max.x;
+	f32 v0_y = min.y - max.y;
 
-	f32 v1_x = mid->x - max->x;
-	f32 v1_y = mid->y - max->y;
+	f32 v1_x = mid.x - max.x;
+	f32 v1_y = mid.y - max.y;
 
 	f32 area_double_signed = v0_x * v1_y - v1_x * v0_y;
 
@@ -549,8 +550,148 @@ triangle_scan(win32_back_buffer *Win32BackBuffer, triangle *Triangle)
 		Right.x += Right.x_step;
 	}
 }
+#endif
+
+internal v3f
+barycentric_cood(v3f X, v3f Y, v3f Z, v3f P)
+{
+	v3f Result = {};
+	v3f E1 = Z - X;
+	v3f E2 = Y - X;
+	v3f F = P - X;
+
+	v3f Beta = {};
+	v3f Gamma = {};
+
+	Beta = (v3f_innerf(E2, E2) * E1 - v3f_innerf(E1, E2) * E2); 
+	f32 c_beta = 1.0f / (v3f_innerf(E1, E1) * v3f_innerf(E2, E2) - SQUARE(v3f_innerf(E1, E2)));
+	Beta = c_beta * Beta; 
+
+	Gamma = (v3f_innerf(E1, E1) * E2 - v3f_innerf(E1, E2) * E1); 
+	f32 c_gamma = 1.0f / (v3f_innerf(E1, E1) * v3f_innerf(E2, E2) - SQUARE(v3f_innerf(E1, E2)));
+	Gamma = c_gamma * Gamma;
+
+	Result.x = v3f_innerf(Beta, F);
+	Result.y = v3f_innerf(Gamma, F);
+	Result.z = 1 - Result.x - Result.y;
+
+	return(Result);
+}
 
 
+internal void
+triangle_scan_interpolation(win32_back_buffer *Win32BackBuffer, triangle *Triangle)
+{
+	v3f tmp = {};
+	v3f min = Triangle->Vertices[0].xyz;
+	v3f mid = Triangle->Vertices[1].xyz;
+	v3f max = Triangle->Vertices[2].xyz;
+
+	if (min.y > max.y) {
+		tmp = min;
+		min = max;
+		max = tmp;
+	}
+	if (mid.y >  max.y) {
+		tmp = mid;
+		mid = max;
+		max = tmp;
+	}
+	if (min.y > mid.y) {
+		tmp = min;
+		min = mid;
+		mid = tmp;
+	}
+
+	edge BottomToTop = edge_create_from_v3f(min, max);
+	edge MiddleToTop = edge_create_from_v3f(mid, max);
+	edge BottomToMiddle = edge_create_from_v3f(min, mid);
+
+
+	f32 v0_x = min.x - max.x;
+	f32 v0_y = min.y - max.y;
+
+	f32 v1_x = mid.x - max.x;
+	f32 v1_y = mid.y - max.y;
+
+	f32 area_double_signed = v0_x * v1_y - v1_x * v0_y;
+
+	b32 oriented_right;
+	if (area_double_signed > 0) {
+		// BottomToTop is on the left
+		// Two edges on the right
+		oriented_right = true;
+	} else {
+		// BottomToTop is on the right 
+		// Two edges on the left 
+		oriented_right = false;
+	}
+	b32 which_side;
+	if (oriented_right) {
+		which_side = false;
+	} else {
+		which_side = true;
+	}
+
+	edge Left = BottomToTop;
+	edge Right = BottomToMiddle;
+	if (!oriented_right) {
+		// Left oriented so swap edges.
+		edge Temp = Left;
+		Left = Right;
+		Right = Temp;
+	}
+
+	int y_start = BottomToMiddle.y_start;
+	int y_end = BottomToMiddle.y_end;
+	v3f P = min;
+	v3f Color = {};
+	for (int j = y_start; j < y_end; j++) {
+		P.x = Left.x;
+		int x_start = (int)ceilf(Left.x);
+		int x_end = (int)ceilf(Right.x);
+		for (int i = x_start; i < x_end; i++) {
+			Color = barycentric_cood(min, max, mid, P);
+			pixel_set(Win32BackBuffer, P.xy, Color);
+			P.x++;
+		}
+		Left.x += Left.x_step;
+		Right.x += Right.x_step;
+		P.y++;
+	}
+
+
+	Left = BottomToTop;
+	Right = MiddleToTop;
+
+	// Offset the starting x value of the bottom edge so that it is at the
+	// correct x value to render the top half of the triangle
+	Left.x += (MiddleToTop.y_start - BottomToTop.y_start) * Left.x_step;
+
+	if (!oriented_right) {
+		// Left oriented so swap edges.
+		edge Temp = Left;
+		Left = Right;
+		Right = Temp;
+	}
+
+	y_start = MiddleToTop.y_start;
+	y_end = MiddleToTop.y_end;
+	P = min;
+	Color = {};
+	P.y = (f32)y_start;
+	for (int j = y_start; j < y_end; j++) {
+		P.x = Left.x;
+		for (int i = Left.x; i < Right.x; i++) {
+			Color = barycentric_cood(min, max, mid, P);
+			pixel_set(Win32BackBuffer, P.xy, Color);
+			P.x++;
+		}
+		Left.x += Left.x_step;
+		Right.x += Right.x_step;
+		P.y++;
+	}
+}
 int CALLBACK
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
@@ -592,7 +733,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 			f32 direction = 1.0f;
 			v3f Color = {1.0f, 1.0f, 1.0f};
 
-			v3f CameraPos = {0.0f, 0.0f, 0.0f};
+			v3f CameraPos = {0.0f, 0.0f, 1.0f};
 			v3f CameraDirection = {0.0f, 0.0f, 1.0f};
 			v3f CameraUp = {0.0f, 1.0f, 0.0f};
 
@@ -636,13 +777,18 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 			srand(2023);
 
 			triangle Triangles[3];
-			Triangles[0].Vertices[0] = {-0.5f, -0.5f, -1.0f, 1.0f};
-			Triangles[0].Vertices[1] = {0.5f, 0.0f, -1.0f, 1.0f};
-			Triangles[0].Vertices[2] = {0.0f, 0.5f, -1.0f, 1.0f};
+			Triangles[0].Vertices[0] = {-0.5f, -0.5f, 0.0f, 1.0f};
+			Triangles[0].Vertices[1] = {0.5f, 0.0f, 0.0f, 1.0f};
+			Triangles[0].Vertices[2] = {0.0f, 0.5f, 0.0f, 1.0f};
 			Triangles[0].Color = Color;
 
+			Triangles[1].Vertices[0] = {-0.5f, -0.5f, -1.0f, 1.0f};
+			Triangles[1].Vertices[1] = {0.5f, 0.0f, -1.0f, 1.0f};
+			Triangles[1].Vertices[2] = {0.0f, 0.5f, -1.0f, 1.0f};
+			Triangles[1].Color = Color;
+
 			circle Circle;
-			Circle.Center = {0.0f, 0.0f, -1.0f, 1.0f};
+			Circle.Center = {0.0f, 0.0f, 0.0f, 1.0f};
 			Circle.radius = 10.0f;
 
 			GLOBAL_RUNNING = true;
@@ -863,11 +1009,8 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 				}
 #if 1
 				M = MapToScreenSpace * MapToPersp * MapToCamera;
-				for (int i = 1; i < 21; i++) {
-					v4f Position = {0.0f, 0.0f, -i, 1};
-					Position = RotateZ * Position;
-					axis_draw(&Win32BackBuffer, M, Position);
-				}
+				v4f Position = {0.0f, 0.0f, -1.0f, 1};
+//				axis_draw(&Win32BackBuffer, M, Position);
 
 
 #endif
@@ -877,7 +1020,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 				//
 
 
-				//m4x4 RotateZ = m4x4_rotation_z_create(time_delta);// * (PI32 / 4.0f));
+				RotateZ = m4x4_rotation_z_create(time_delta);// * (PI32 / 4.0f));
 				m4x4 RotateY = m4x4_rotation_y_create(time_delta * (PI32 / 4.0f));
 				m4x4 RotateX = m4x4_rotation_x_create(time_delta * (PI32 / 4.0f));
 				m4x4 Rotate = RotateZ * RotateY * RotateX;
@@ -903,6 +1046,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 					Fragment.Vertices[i] = (1.0f / Fragment.Vertices[i].w) * Fragment.Vertices[i];
 				}
 
+#if 0
 				Circle.Center = RotateY * Circle.Center;
 				circle FragmentCircle;
 				FragmentCircle.Center = MapToScreenSpace * MapToPersp * MapToCamera * Circle.Center;
@@ -913,9 +1057,12 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 				// away/towards the circle.
 				FragmentCircle.radius = (1.0f / FragmentCircle.Center.w) * Circle.radius;
 				Color = {1.0f, 1.0f, 1.0f};
-				
-//				circle_draw(&Win32BackBuffer, FragmentCircle, Color);
 
+				circle_draw(&Win32BackBuffer, FragmentCircle, Color);
+#endif
+				
+
+				triangle_scan_interpolation(&Win32BackBuffer, &Fragment);
 #if 0
 				triangle_scan(&Win32BackBuffer, &Fragment);
 

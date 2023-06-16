@@ -702,19 +702,17 @@ m4x4_orthographic_projection_create(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f)
 }
 
 
-#if 0
 internal m4x4
-m4x4_translation_to_origin_create(basis_orthonormal B)
+m4x4_translation_to_origin_create(v3f V)
 {
 	m4x4 R =
 	{
-		{{1, 0, 0, -B.E1.x},
-		{0, 1, 0, -B.E2.y},
-		{0, 0, 1, -B.E3.z},
+		{{1, 0, 0, -V.x},
+		{0, 1, 0, -V.y},
+		{0, 0, 1, -V.z},
 		{0, 0, 0, 1}},
 	};
 	return(R);
 }
-#endif
 #define SOFTWARE_RENDERER_MATH_H
 #endif
