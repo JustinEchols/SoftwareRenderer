@@ -1,0 +1,216 @@
+
+#if 0
+internal void
+scan_buffer_fill_between_vertices(scan_buffer *ScanBuffer, v3f VertexMin, v3f VertexMax, b32 which_side)
+{
+	// 
+	// NOTE(Justin): Implementing TOP-LEFT fill convention using the ceiling
+	// function.  Is there any easy to implement this? Round and add 1?
+	//
+
+	s32 y_start	= (s32)ceil(VertexMin.y);
+	s32 y_end	= (s32)ceil(VertexMax.y);
+	s32 x_start	= (s32)ceil(VertexMin.x);
+	s32 x_end	= (s32)ceil(VertexMax.x);
+
+	f32 y_dist = VertexMax.y - VertexMin.y;
+	f32 x_dist = VertexMax.x - VertexMin.x;
+
+	f32 x_step = (f32)x_dist / (f32)y_dist;
+
+	// Distance between real y and first scanline
+	f32 yprestep = y_start - VertexMin.y;
+
+	f32 x_current = VertexMin.x + yprestep * x_step;
+
+	s32 *scan_buffer_memory = (s32 *)ScanBuffer->memory;
+	for (s32 j = y_start; j < y_end; j++) {
+		scan_buffer_memory[2 * j + which_side] = (s32)ceil(x_current);
+		x_current += x_step;
+	}
+}
+
+internal void
+scan_buffer_fill_triangle(scan_buffer *ScanBuffer, triangle *Triangle)
+{
+	v3f tmp = {};
+	v3f min = &Triangle->Vertices[0].xyz;
+	v3f mid = &Triangle->Vertices[1].xyz;
+	v3f max = &Triangle->Vertices[2].xyz;
+
+	if (min.y > max.y) {
+		tmp = min;
+		min = max;
+		max = tmp;
+	}
+	if (mid.y >  max.y) {
+		tmp = mid;
+		mid = max;
+		max = tmp;
+	}
+	if (min.y > mid.y) {
+		tmp = min;
+		min = mid;
+		mid = tmp;
+	}
+
+	//
+	// NOTE(Justin): To determine whether or not the triangle is right oriented 
+	// or left oriented, find the signed area of the triangle using the cross product
+	// of two vectors which represent two sides of the triangle. The first vector
+	// is the vector FROM MAX TO MIN. The second is FROM MAX TO MID. Note that
+	// we are using the sign to determine the orientation of the triangle.
+	//
+
+	f32 v0_x = min.x - max.x;
+	f32 v0_y = min.y - max.y;
+
+	f32 v1_x = mid.x - max.x;
+	f32 v1_y = mid.y - max.y;
+
+	f32 area_double_signed = v0_x * v1_y - v1_x * v0_y;
+
+	b32 oriented_right;
+	if (area_double_signed > 0) {
+		oriented_right = true;
+	} else {
+		oriented_right = false;
+	}
+
+	//
+	// NOTE(Justin): This routine fills the minimmum x values first in the scan
+	// buffer. This corresponds to all x values of the side of the triangle that
+	// is right oriented and has only one edge. The indexing # to fill the scan buffer is 
+	// (2 * j + wihch_side). We want the minimum values to be at offsets 0, 2, 4, ...
+	// and so on in the scann buffer. That is why we set which_side to false
+	// because then (2 * j + which_side(0))  is even for each j.
+	// , initially, whenever the triangle is right oriented. After the min
+	// values are entered in the scan buffer the max values for the remaining
+	// two sides of the triangle are entered into the scan buffer at offsets 1,B
+	// 3, 5, 7, ... which are odd offsets. This is why we set which_side = true
+	// after. Then 2 * j + which_side is odd for each value of j. 
+	//
+
+	b32 which_side;
+	if (oriented_right) {
+		which_side = false;
+	} else {
+		which_side = true;
+	}
+
+	scan_buffer_fill_between_vertices(ScanBuffer, min, max, which_side);
+
+	which_side = !which_side;
+	scan_buffer_fill_between_vertices(ScanBuffer, mid, max, which_side);
+	scan_buffer_fill_between_vertices(ScanBuffer, min, mid, which_side);
+}
+#endif
+
+#if 0
+internal void
+triangle_scan(win32_back_buffer *Win32BackBuffer, triangle *Triangle)
+{
+	v3f tmp = {};
+	v3f min = &Triangle->Vertices[0].xyz;
+	v3f mid = &Triangle->Vertices[1].xyz;
+	v3f max = &Triangle->Vertices[2].xyz;
+
+	if (min.y > max.y) {
+		tmp = min;
+		min = max;
+		max = tmp;
+	}
+	if (mid.y >  max.y) {
+		tmp = mid;
+		mid = max;
+		max = tmp;
+	}
+	if (min.y > mid.y) {
+		tmp = min;
+		min = mid;
+		mid = tmp;
+	}
+
+	edge BottomToTop = edge_create_from_v3f(min, max);
+	edge MiddleToTop = edge_create_from_v3f(mid, max);
+	edge BottomToMiddle = edge_create_from_v3f(min, mid);
+
+
+	f32 v0_x = min.x - max.x;
+	f32 v0_y = min.y - max.y;
+
+	f32 v1_x = mid.x - max.x;
+	f32 v1_y = mid.y - max.y;
+
+	f32 area_double_signed = v0_x * v1_y - v1_x * v0_y;
+
+	b32 oriented_right;
+	if (area_double_signed > 0) {
+		// BottomToTop is on the left
+		// Two edges on the right
+		oriented_right = true;
+	} else {
+		// BottomToTop is on the right 
+		// Two edges on the left 
+		oriented_right = false;
+	}
+	b32 which_side;
+	if (oriented_right) {
+		which_side = false;
+	} else {
+		which_side = true;
+	}
+
+	edge Left = BottomToTop;
+	edge Right = BottomToMiddle;
+	if (!oriented_right) {
+		// Left oriented so swap edges.
+		edge Temp = Left;
+		Left = Right;
+		Right = Temp;
+	}
+
+	int y_start = BottomToMiddle.y_start;
+	int y_end = BottomToMiddle.y_end;
+	for (int j = y_start; j < y_end; j++) {
+		scanline_draw(Win32BackBuffer, Left, Right, j);
+		Left.x += Left.x_step;
+		Right.x += Right.x_step;
+	}
+
+
+	Left = BottomToTop;
+	Right = MiddleToTop;
+
+	// Offset the starting x value of the bottom edge so that it is at the
+	// correct x value to render the top half of the triangle
+	Left.x += (MiddleToTop.y_start - BottomToTop.y_start) * Left.x_step;
+
+	if (!oriented_right) {
+		// Left oriented so swap edges.
+		edge Temp = Left;
+		Left = Right;
+		Right = Temp;
+	}
+
+	y_start = MiddleToTop.y_start;
+	y_end = MiddleToTop.y_end;
+	for (int j = y_start; j < y_end; j++) {
+		scanline_draw(Win32BackBuffer, Left, Right, j);
+		Left.x += Left.x_step;
+		Right.x += Right.x_step;
+	}
+}
+#endif
+
+#if 0
+				// Resize the scan buffer upon a change in the window size
+				if (ScanBuffer.height != Win32BackBuffer.height) {
+					if (ScanBuffer.memory) {
+						VirtualFree(ScanBuffer.memory, 0, MEM_RELEASE);
+					}
+					ScanBuffer.memory = VirtualAlloc(0, Win32BackBuffer.height * 2 * sizeof(u32), (MEM_COMMIT | MEM_RESERVE), PAGE_READWRITE);
+					ScanBuffer.height = Win32BackBuffer.height;
+					MapToScreenSpace = m4x4_screen_space_map_create(Win32BackBuffer.width, Win32BackBuffer.height);
+				}
+#endif

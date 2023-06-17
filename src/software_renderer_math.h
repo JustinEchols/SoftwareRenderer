@@ -1,42 +1,133 @@
 #if !defined(SOFTWARE_RENDERER_MATH_H)
+#include "math.h"
 
 #define SQUARE(x) ((x) * (x))
 #define CUBE(x) ((x) * (x) * (x))
 
-internal s32
-round_f32_to_s32(f32 x)
+union v2f
 {
-	s32 result = (s32)(x + 0.5f);
-	return(result);
-}
+	struct
+	{
+		f32 x, y;
+	};
+	struct
+	{
+		f32 u, v;
+	};
+	f32 e[2];
+};
 
-internal s32
-truncate_f32_to_s32(f32 x)
+union v2i
 {
-	s32 result = (s32)x;
-	return(result);
-}
+	struct
+	{
+		s32 x, y;
+	};
+	struct
+	{
+		s32 u, v;
+	};
+	s32 e[2];
+};
 
-internal u32
-round_f32_to_u32(f32 x)
+union v3f
 {
-	u32 result = (u32)(x + 0.5f);
-	return(result);
-}
+	struct
+	{
+		f32 x, y, z;
+	};
+	struct
+	{
+		f32 u, v, __;
+	};
+	struct
+	{
+		f32 r, g, b;
+	};
+	struct
+	{
+		v2f xy;
+		f32 ignored0_;
+	};
+	struct
+	{
+		f32 ignored1_;
+		v2f yz;
 
-internal u32
-truncate_f32_to_u32(f32 x)
-{
-	u32 result = (u32)x;
-	return(result);
-}
+	};
+	struct
+	{
+		v2f uv;
+		f32 ignored2_;
+	};
+	struct
+	{
+		f32 ignored3_;
+		v2f v__;
+	};
+	f32 e[3];
+};
 
-inline f32
-sqauare_rootf(f32 x)
+union v4f
 {
-	f32 result = sqrtf(x);
-	return(result);
-}
+	struct
+	{
+		union
+		{
+			v3f xyz;
+			struct
+			{
+				f32 x, y, z;
+			};
+		};
+		f32 w;
+	};
+	struct
+	{
+		union
+		{
+			v3f rgb;
+			struct
+			{
+				f32 r, g, b;
+			};
+		};
+		f32 a;
+	};
+	struct
+	{
+		v2f xy;
+		f32 ignored0_;
+		f32 ignored1_;
+	};
+	struct
+	{
+		f32 ignored2_;
+		v2f yz;
+		f32 ignored3_;
+	};
+	struct
+	{
+		f32 ignored4_;
+		f32 ignored5_;
+		v2f zw;
+	};
+	f32 e[4];
+};
+
+
+
+struct m2x2
+{
+	// NOTE(Justin): Stored in ROW MAJOR order i.e. e[ROW][COL]
+	f32 e[2][2];
+};
+
+struct m4x4
+{
+	// NOTE(Justin): Stored in ROW MAJOR order i.e. e[ROW][COL]
+	f32 e[4][4];
+};
 
 //
 // NOTE(Justin): v2f operations
@@ -457,6 +548,23 @@ operator *(m4x4 A, v4f V)
 	return(R);
 }
 
+#if 0
+inline m4x4
+m4x4_transpose(m4x4 A)
+{
+	m4x4 R;
+
+	f32 tmp = 0.0f;
+	for (int j = 0; j < 3; j++) {
+		for (int i = 0; i < 3; i++) {
+			tmp = A[i][j];
+			A[i][j] = A[j][i];
+			A[j][i] = tmp;
+		}
+	}
+}
+#endif
+
 inline m4x4
 m4x4_identity_create(void)
 {
@@ -553,33 +661,6 @@ m4x4_perspective_projection_create(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f)
 }
 
 #if 0
-inline m4x4
-m4x4_perspective_projection_create(f32 aspect_width_by_height, f32 focal_length, f32 plane_near, f32 plane_far)
-{
-	// NOTE(Justin): 
-	//	n - f distance between near and far planes
-
-	f32 a = 1.0f;
-	f32 b = aspect_width_by_height;
-	f32 c = focal_length;
-
-	f32 n = plane_near;
-	f32 f = plane_far;
-
-	f32 d = (n + f) / (n - f);
-	f32 e = (2.0f * f * n) / (n - f);
-
-	m4x4 R =
-	{
-		{{(2.0f * n/ (r - l)), 0, 0, (-1.0f * (r + l) / (r - l))},
-		{0, (2.0f / (t - b)), 0, (-1.0f * (t + b) / (t - b))},
-		{0, 0, (2.0f / (n - f)), (-1.0f * (n + f) / (n - f))},
-		{0, 0, 0, 1}},
-	};
-	return(R);
-}
-#endif
-
 inline m4x4 
 m4x4_rectangle_transformation(rectangle R1, rectangle R2)
 {
@@ -603,6 +684,7 @@ m4x4_rectangle_transformation(rectangle R1, rectangle R2)
 
 	return(R);
 }
+#endif
 
 internal m4x4
 m4x4_camera_map_create(v3f CameraPos, v3f CameraDirection, v3f CameraUp)
@@ -627,7 +709,6 @@ m4x4_camera_map_create(v3f CameraPos, v3f CameraDirection, v3f CameraUp)
 		{0, 0, 0, 1}},
 	};
 
-	// 
 	m4x4 M =
 	{
 		{{U.x, V.x, W.x, 0},
@@ -656,35 +737,6 @@ m4x4_screen_space_map_create(int width, int height)
 		{0, 0, 1, 0},
 		{0, 0, 0, 1}},
 	};
-
-
-#if 0
-	//NOTE(Justin): Do we need to subtract 1 from the shift then  / 2?
-	// Asking question because read this matrix from book and they subtract 1
-	// from the shift
-	v3f x_scale_to_screen = v3f_create_from_scalars((f32)width / 2.0f, 1.0f, 1.0f);
-	v3f x_shift_to_screen = v3f_create_from_scalars(-1.0f * (f32)(width - 1) / 2.0f, 0.0f, 0.0f);
-
-	// WARNING(Justin): The order here matters. If we first shift then scale,
-	// this produces an undesired result. Since matrix multiplication is from
-	// right to left, the rightmost matrix must be the scaling transformation.
-	// Then we apply the shifting transformation.
-
-	m4x4 Scale_x = m4x4_scale_create(x_scale_to_screen);
-	m4x4 Shift_x = m4x4_translation_create(x_shift_to_screen);
-	m4x4 Map_x = Shift_x * Scale_x;
-
-	v3f y_scale_to_screen = v3f_create_from_scalars(1.0f, (f32)height / 2.0f, 1.0f);
-	v3f y_shift_to_screen = v3f_create_from_scalars(0.0f, -1.0f * (f32)(height - 1) / 2.0f, 0.0f);
-
-	m4x4 Scale_y = m4x4_scale_create(y_scale_to_screen);
-	m4x4 Shift_y = m4x4_translation_create(y_shift_to_screen);
-	m4x4 Map_y = Shift_y * Scale_y;
-
-
-	R = Map_y * Map_x;
-#endif
-
 	return(R);
 }
 
