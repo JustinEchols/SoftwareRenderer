@@ -33,10 +33,44 @@ typedef double f64;
 #define ARRAY_COUNT(a) (sizeof(a) / sizeof(a[0]))
 #define ABS(x) ((x < 0) ? -(x): (x))
 
+#define KILOBYTES(count) (1024 * count)
+#define MEGABYTES(count) (1024 * KILOBYTES(count))
+#define GIGABYTES(count) (1024 * MEGABYTES(count))
+#define TERABYTES(count) (1024 * GIGABYTES(count))
+
 #define PI32 3.141592653589f
 #define RAD32 (PI32 / 180.0f)
 
-//#define ASSERT(expression) if(!expression){*(int *)0 = 0;}
+#if APP_SLOW
+#define ASSERT(expression) if(!(expression)) {*(int *)0 = 0;}
+#else
+#define ASSERT(expression)
+#endif
+
+inline u32
+u64_truncate_to_u32(u64 x)
+{
+	ASSERT(x <= 0xFFFFFFFF);
+	u32 Result = (u32)x;
+	return(Result);
+}
+//
+// NOTE(Justin): Services that the application provides to the windows platform
+// layer
+//
+
+#if APP_INTERNAL
+struct debug_file_read_result
+{
+	u32 size;
+	void *memory;
+};
+
+internal debug_file_read_result debug_platform_file_read_entire(char *file_name);
+//internal void * debug_platform_file_read_entire(char *file_name);
+internal void debug_platform_file_free(void *memory);
+internal b32 debug_platform_file_write_entire(char *file_name, u32 size, void *memory);
+#endif
 
 typedef struct
 {
@@ -74,10 +108,19 @@ typedef struct
 
 typedef struct
 {
-	b32 is_initiliazed;
 	f32 time_delta;
 	app_button_state Buttons[BUTTON_COUNT];
 } app_input;
+
+typedef struct
+{
+	b32 is_initialized;
+	void *permanent_storage;
+	void *transient_storage;
+	u64 permanent_storage_size;
+	u64 transient_storage_size;
+
+} app_memory;
 
 #define SFOTWARE_RENDERER_PLATFORM_H
 #endif

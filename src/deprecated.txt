@@ -1,6 +1,41 @@
 
 #if 0
 internal void
+scan_buffer_draw_shape(win32_app_back_buffer *Win32BackBuffer, scan_buffer *ScanBuffer, f32 ymin, f32 ymax, v3f Color)
+{
+	// TODO(Justin): ASSERT 
+
+	int y_min = round_f32_to_s32(ymin);
+	int y_max = round_f32_to_s32(ymax);
+
+	if (y_min < 0) {
+		y_min = 0;
+	}
+	if (y_max >= Win32BackBuffer->height) {
+		y_max = Win32BackBuffer->height - 1;
+	}
+
+	u32 color = color_convert_v3f_to_u32(Color);
+
+	u8 *pixel_row = (u8 *)Win32BackBuffer->memory + Win32BackBuffer->stride * y_min;
+	s32 *scan_buffer_memory = (s32 *)ScanBuffer->memory;
+	for (int y = y_min; y < y_max; y++) {
+		int x_min = scan_buffer_memory[2 * y];
+		int x_max = scan_buffer_memory[2 * y + 1];
+
+		u8 *pixel_start = pixel_row + Win32BackBuffer->bytes_per_pixel * x_min;
+
+		u32 *pixel = (u32 *)pixel_start;
+		for (int i = x_min; i < x_max; i++) {
+			*pixel++ = color;
+		}
+		pixel_row += Win32BackBuffer->stride;
+	}
+}
+#endif
+
+#if 0
+internal void
 scan_buffer_fill_between_vertices(scan_buffer *ScanBuffer, v3f VertexMin, v3f VertexMax, b32 which_side)
 {
 	// 

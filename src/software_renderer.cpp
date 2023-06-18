@@ -1,6 +1,41 @@
 #include "software_renderer.h"
 #include "software_renderer_math.h"
 
+internal v3f
+color_rand_init()
+{
+	v3f Result;
+	Result.r = ((f32)rand() / (f32)RAND_MAX);
+	Result.g = ((f32)rand() / (f32)RAND_MAX);
+	Result.b = ((f32)rand() / (f32)RAND_MAX);
+
+	return(Result);
+}
+
+internal v4f
+v4f_rand_init()
+{
+	v4f Result = {};
+
+	Result.x = ((((f32)rand() / (f32)RAND_MAX) * 2.0f) - 1.0f);
+	Result.y = ((((f32)rand() / (f32)RAND_MAX) * 2.0f) - 1.0f);
+	Result.z = (((f32)rand() / (f32)RAND_MAX) - 2.0f);
+	Result.w = 1;
+
+	return(Result);
+}
+
+internal triangle
+triangle_rand_init()
+{
+	triangle Result = {};
+	for(u32 i = 0; i < 3; i++) {
+		Result.Vertices[i] = v4f_rand_init();
+	}
+	Result.Color = color_rand_init();
+	return(Result);
+}
+
 internal u32
 color_convert_v3f_to_u32(v3f Color)
 {
@@ -39,8 +74,8 @@ line_draw_dda(app_back_buffer *AppBackBuffer, v2f P1, v2f P2, v3f Color)
 {
 	v2f Diff = P2 - P1;
 
-	int dx = round_f32_to_s32(Diff.x);
-	int dy = round_f32_to_s32(Diff.y);
+	int dx = f32_round_to_s32(Diff.x);
+	int dy = f32_round_to_s32(Diff.y);
 
 	int steps, k;
 
@@ -63,11 +98,11 @@ line_draw_dda(app_back_buffer *AppBackBuffer, v2f P1, v2f P2, v3f Color)
 internal void
 circle_draw(app_back_buffer *AppBackBuffer, circle Circle, v3f Color)
 {
-	u32 x_min = round_f32_to_u32(Circle.Center.x - Circle.radius);
-	u32 x_max = round_f32_to_u32(Circle.Center.x + Circle.radius);
+	u32 x_min = f32_round_to_u32(Circle.Center.x - Circle.radius);
+	u32 x_max = f32_round_to_u32(Circle.Center.x + Circle.radius);
 
-	u32 y_min = round_f32_to_u32(Circle.Center.y - Circle.radius);
-	u32 y_max = round_f32_to_u32(Circle.Center.y + Circle.radius);
+	u32 y_min = f32_round_to_u32(Circle.Center.y - Circle.radius);
+	u32 y_max = f32_round_to_u32(Circle.Center.y + Circle.radius);
 
 	f32 distance_squared = 0.0f;
 	f32 radius_sqaured = SQUARE(Circle.radius);
@@ -110,11 +145,11 @@ internal void
 rectangle_draw(app_back_buffer *AppBackBuffer, rectangle R, v3f Color)
 {
 	// TODO(Justin): Bounds checking
-	u32 x_min = round_f32_to_u32(R.Min.x);
-	u32 x_max = round_f32_to_u32(R.Max.x);
+	u32 x_min = f32_round_to_u32(R.Min.x);
+	u32 x_max = f32_round_to_u32(R.Max.x);
 
-	u32 y_min = round_f32_to_u32(R.Min.y);
-	u32 y_max = round_f32_to_u32(R.Max.y);
+	u32 y_min = f32_round_to_u32(R.Min.y);
+	u32 y_max = f32_round_to_u32(R.Max.y);
 
 
 	u32 color = color_convert_v3f_to_u32(Color);
@@ -166,8 +201,8 @@ internal edge
 edge_create_from_v3f(v3f VertexMin, v3f VertexMax)
 {
 	edge Result;
-	Result.y_start = round_f32_to_s32(VertexMin.y);
-	Result.y_end = round_f32_to_s32(VertexMax.y);
+	Result.y_start = f32_round_to_s32(VertexMin.y);
+	Result.y_end = f32_round_to_s32(VertexMax.y);
 
 	f32 y_dist = VertexMax.y - VertexMin.y;
 	f32 x_dist = VertexMax.x - VertexMin.x;
@@ -197,6 +232,11 @@ scanline_draw(app_back_buffer *AppBackBuffer, edge Left, edge Right, s32 scanlin
 internal v3f
 barycentric_cood(v3f X, v3f Y, v3f Z, v3f P)
 {
+	//
+	// NOTE(Justin): The computation of finding the cood. is based on the area
+	// interpretation of Barycentric coordinates.
+	//
+	
 	v3f Result = {};
 	v3f E1 = Z - X;
 	v3f E2 = Y - X;
@@ -223,37 +263,37 @@ barycentric_cood(v3f X, v3f Y, v3f Z, v3f P)
 internal void
 triangle_scan_interpolation(app_back_buffer *AppBackBuffer, triangle *Triangle)
 {
-	v3f tmp = {};
-	v3f min = Triangle->Vertices[0].xyz;
-	v3f mid = Triangle->Vertices[1].xyz;
-	v3f max = Triangle->Vertices[2].xyz;
+	v3f Tmp = {};
+	v3f Min = Triangle->Vertices[0].xyz;
+	v3f Mid = Triangle->Vertices[1].xyz;
+	v3f Max = Triangle->Vertices[2].xyz;
 
-	if (min.y > max.y) {
-		tmp = min;
-		min = max;
-		max = tmp;
+	if (Min.y > Max.y) {
+		Tmp = Min;
+		Min = Max;
+		Max = Tmp;
 	}
-	if (mid.y >  max.y) {
-		tmp = mid;
-		mid = max;
-		max = tmp;
+	if (Mid.y >  Max.y) {
+		Tmp = Mid;
+		Mid = Max;
+		Max = Tmp;
 	}
-	if (min.y > mid.y) {
-		tmp = min;
-		min = mid;
-		mid = tmp;
+	if (Min.y > Mid.y) {
+		Tmp = Min;
+		Min = Mid;
+		Mid = Tmp;
 	}
 
-	edge BottomToTop = edge_create_from_v3f(min, max);
-	edge MiddleToTop = edge_create_from_v3f(mid, max);
-	edge BottomToMiddle = edge_create_from_v3f(min, mid);
+	edge BottomToTop = edge_create_from_v3f(Min, Max);
+	edge MiddleToTop = edge_create_from_v3f(Mid, Max);
+	edge BottomToMiddle = edge_create_from_v3f(Min, Mid);
 
 
-	f32 v0_x = min.x - max.x;
-	f32 v0_y = min.y - max.y;
+	f32 v0_x = Min.x - Max.x;
+	f32 v0_y = Min.y - Max.y;
 
-	f32 v1_x = mid.x - max.x;
-	f32 v1_y = mid.y - max.y;
+	f32 v1_x = Mid.x - Max.x;
+	f32 v1_y = Mid.y - Max.y;
 
 	f32 area_double_signed = v0_x * v1_y - v1_x * v0_y;
 
@@ -267,12 +307,6 @@ triangle_scan_interpolation(app_back_buffer *AppBackBuffer, triangle *Triangle)
 		// Two edges on the left 
 		oriented_right = false;
 	}
-	b32 which_side;
-	if (oriented_right) {
-		which_side = false;
-	} else {
-		which_side = true;
-	}
 
 	edge Left = BottomToTop;
 	edge Right = BottomToMiddle;
@@ -284,27 +318,32 @@ triangle_scan_interpolation(app_back_buffer *AppBackBuffer, triangle *Triangle)
 
 	int y_start = BottomToMiddle.y_start;
 	int y_end = BottomToMiddle.y_end;
-	v3f P = min;
+
+	v3f P = Min;
 	v3f Color = {};
 	for (int j = y_start; j < y_end; j++) {
+		// For each scanline
 		P.x = Left.x;
-		int x_start = round_f32_to_s32(Left.x);
-		int x_end = round_f32_to_s32(Right.x);
+		int x_start = f32_round_to_s32(Left.x);
+		int x_end = f32_round_to_s32(Right.x);
 		for (int i = x_start; i < x_end; i++) {
-			Color = barycentric_cood(min, max, mid, P);
+			// Get the barycentric cood. for each P in the scanline 
+			// and set the corresponding pixel. 
+			Color = barycentric_cood(Min, Max, Mid, P);
 			pixel_set(AppBackBuffer, P.xy, Color);
 			P.x++;
 		}
+		// Increment Left and Right to proper x -values of next scanline.
+		// Increment point P y - value to next scanline.
 		Left.x += Left.x_step;
 		Right.x += Right.x_step;
 		P.y++;
 	}
 
-
 	Left = BottomToTop;
 	Right = MiddleToTop;
 
-	// Offset the starting x value of the bottom edge so that it is at the
+	// Offset the starting x value so that it is at the
 	// correct x value to render the top half of the triangle
 	Left.x += (MiddleToTop.y_start - BottomToTop.y_start) * Left.x_step;
 
@@ -316,15 +355,15 @@ triangle_scan_interpolation(app_back_buffer *AppBackBuffer, triangle *Triangle)
 
 	y_start = MiddleToTop.y_start;
 	y_end = MiddleToTop.y_end;
-	P = min;
-	Color = {};
+
+	//P = Min;
 	P.y = (f32)y_start;
 	for (int j = y_start; j < y_end; j++) {
 		P.x = Left.x;
-		int x_start = round_f32_to_s32(Left.x);
-		int x_end = round_f32_to_s32(Right.x);
+		int x_start = f32_round_to_s32(Left.x);
+		int x_end = f32_round_to_s32(Right.x);
 		for (int i = x_start; i < x_end; i++) {
-			Color = barycentric_cood(min, max, mid, P);
+			Color = barycentric_cood(Min, Max, Mid, P);
 			pixel_set(AppBackBuffer, P.xy, Color);
 			P.x++;
 		}
@@ -335,8 +374,11 @@ triangle_scan_interpolation(app_back_buffer *AppBackBuffer, triangle *Triangle)
 }
 
 internal void
-app_update_and_render(app_back_buffer *AppBackBuffer, app_input *AppInput)
+app_update_and_render(app_back_buffer *AppBackBuffer, app_input *AppInput, app_memory *AppMemory)
 {
+	if (!AppMemory->is_initialized) {
+		AppMemory->is_initialized = true;
+	}
 	f32 time_delta = AppInput->time_delta;
 	f32 direction = 1.0f;
 	v3f Color = {1.0f, 1.0f, 1.0f};
@@ -393,13 +435,6 @@ app_update_and_render(app_back_buffer *AppBackBuffer, app_input *AppInput)
 	b32 using_camera_one = true;
 	b32 using_camera_two = false;
 	b32 using_camera_three = false;
-
-
-
-	AppInput->is_initiliazed = true;
-
-
-
 
 	// Clear screen to black
 	u32 *pixel = (u32 *)AppBackBuffer->memory;

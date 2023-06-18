@@ -1,6 +1,6 @@
 @echo off
 
-set common_compiler_flags= -nologo -Od -W4 -Zi -wd4100 -wd4201 -wd4189 -wd4505
+set common_compiler_flags= -nologo -Od -W4 -Zi -wd4100 -wd4201 -wd4189 -wd4505 -DAPP_SLOW=1 -DAPP_INTERNAL=1
 set common_linker_flags= user32.lib Gdi32.lib Winmm.lib
 
 REM figure out why ..\..\build makes compiling in vim funny
