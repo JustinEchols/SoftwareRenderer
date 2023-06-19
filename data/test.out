@@ -375,80 +375,20 @@ triangle_scan_interpolation(app_back_buffer *AppBackBuffer, triangle *Triangle)
 		P.y++;
 	}
 }
-#pragma pack(push, 1)
-typedef struct 
-{
-	u16 FileType;     /* File type, always 4D42h ("BM") */
-	u32 FileSize;     /* Size of the file in bytes */
-	u16 Reserved1;    /* Always 0 */
-	u16 Reserved2;    /* Always 0 */
-	u32 BitmapOffset; 
-	u32 Size;            
-	s32 Width;           
-	s32 Height;          
-	u16 Planes;          
-	u16 BitsPerPixel;    
-	u32 Compression;     
-	u32 SizeOfBitmap;    
-	s32 HorzResolution;  
-	s32 VertResolution;  
-	u32 ColorsUsed;      
-	u32 ColorsImportant; 
-} bitmap_header;
-#pragma pack(pop)
-
-typedef struct
-{
-	void *memory;
-	s32 width;           
-	s32 height;          
-
-	//stride?
-	//bytes_per_pixel?
-	
-} loaded_bitmap;
-
-internal loaded_bitmap 
-debug_file_bitmap_read_entire(char *file_name)
-{
-	loaded_bitmap Result = {};
-	debug_file_read_result File = debug_platform_file_read_entire(file_name);
-	if (File.memory) {
-		bitmap_header *BitmapHeader = (bitmap_header *)File.memory;
-		Result.memory = (void *)((u8 *)BitmapHeader + BitmapHeader->BitmapOffset);
-		Result.width = BitmapHeader->Width;
-		Result.height = BitmapHeader->Height;
-	} else {
-	}
-	return(Result);
-}
-
-internal void
-bitmap_draw(app_back_buffer *AppBackBuffer, loaded_bitmap *Bitmap)
-{
-	u8 *src_row = (u8 *)Bitmap->memory;
-	u8 *dest_row = (u8 *)AppBackBuffer->memory;
-	for (int y = 0; y < Bitmap->height; y++) {
-		u32 *dest = (u32 *)dest_row;
-		u32 *src = (u32 *)src_row;
-		for (int x = 0; x < Bitmap->width; x++) {
-			*dest++ = *src++;
-		}
-		dest_row += AppBackBuffer->stride;
-		src_row += (Bitmap->width * 4);
-
-	}
-}
 
 internal void
 app_update_and_render(app_back_buffer *AppBackBuffer, app_input *AppInput, app_memory *AppMemory)
 {
 	app_state *AppState = (app_state *)AppMemory->permanent_storage;
-	//ASSERT(1 == 0)
-	ASSERT(sizeof(AppState) <= 0xFFFFFFFF);
+	//ASSERT((sizeof(AppState)) <= 0xFFFFFFFF);
 
 	if (!AppMemory->is_initialized) {
+		debug_file_read_result file = debug_platform_file_read_entire(__FILE__);
+		if (file.memory) {
+			debug_platform_file_write_entire("test.out", file.size, file.memory);
 
+
+		}
 
 		v3f CameraPos = {0.0f, 0.0f, 1.0f};
 		v3f CameraDirection = {0.0f, 0.0f, 1.0f};
@@ -497,11 +437,6 @@ app_update_and_render(app_back_buffer *AppBackBuffer, app_input *AppInput, app_m
 			*pixel++ = 0;
 		}
 	}
-
-	//debug_file_read_result file = debug_platform_file_read_entire("structured_art.bmp");
-	//bitmap_header *BitmapHeader = (bitmap_header *)file.memory;
-	loaded_bitmap Bitmap = debug_file_bitmap_read_entire("structured_art.bmp");
-	bitmap_draw(AppBackBuffer, &Bitmap);
 
 	//
 	// NOTE(Justin): AppInput/ Do something smarter here...

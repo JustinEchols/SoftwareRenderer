@@ -38,8 +38,15 @@ debug_platform_file_read_entire(char *file_name)
 					debug_platform_file_free(Result.memory);
 					Result.size = 0;
 				}
+			} else {
+				// Logging
 			}
+		} else {
+			// Logging
 		}
+		CloseHandle(file_handle);
+	} else {
+		// Logging
 	}
 	return(Result);
 }
@@ -57,6 +64,23 @@ debug_platform_file_free(void *memory)
 internal b32 
 debug_platform_file_write_entire(char *file_name, u32 size, void *memory)
 {
+	b32 Result = false;
+	HANDLE file_handle = CreateFile(file_name, GENERIC_WRITE, 0, 0, CREATE_ALWAYS,
+									0, 0);
+
+	if(file_handle != INVALID_HANDLE_VALUE) {
+		DWORD bytes_written;
+		if(WriteFile(file_handle, memory, size, &bytes_written, 0)) {
+			Result =(bytes_written == size);
+		} else {
+			// Logging
+		}
+		CloseHandle(file_handle);
+	} else {
+		// Logging
+		DWORD Error = GetLastError();
+	}
+	return(Result);
 }
 #endif
 
@@ -132,7 +156,7 @@ win32_main_window_callback(HWND Window, UINT Message, WPARAM wParam, LPARAM lPar
 int CALLBACK
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
-	debug_file_read_result file = debug_platform_file_read_entire("..\\src\\scratch.txt");
+
 
 	WNDCLASSA WindowClass = {};
 
@@ -164,11 +188,10 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 			HDC DeviceContext = GetDC(Window);
 
 
-			LPVOID base_address;
 #if APP_INTERNAL
-			base_address = (LPVOID)TERABYTES((u64)2);
+			LPVOID base_address = (LPVOID)TERABYTES((u64)2);
 #else
-			base_address = 0;
+			LPVOID base_address = 0;
 #endif
 			// TODO(Justin): Win32State..
 
@@ -205,65 +228,65 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 						switch (Message.message) {
 							case WM_KEYDOWN:
 							case WM_KEYUP: 
-								{
-									u32 vk_code = (u32)Message.wParam;
-									b32 was_down = ((Message.lParam & (1 << 30)) != 0);
-									b32 is_down = ((Message.lParam & (1 << 31)) == 0);
+							{
+								u32 vk_code = (u32)Message.wParam;
+								b32 was_down = ((Message.lParam & (1 << 30)) != 0);
+								b32 is_down = ((Message.lParam & (1 << 31)) == 0);
 
-									if (was_down != is_down) {
-										switch (vk_code) {
-											case 'W':
-												{
-													AppInput.Buttons[BUTTON_W].is_down = is_down;
-												} break;
-											case 'S':
-												{
-													AppInput.Buttons[BUTTON_S].is_down = is_down;
-												} break;
-											case 'A':
-												{
-													AppInput.Buttons[BUTTON_A].is_down = is_down;
-												} break;
-											case 'D':
-												{
-													AppInput.Buttons[BUTTON_D].is_down = is_down;
-												} break;
-											case VK_UP:
-												{
-													AppInput.Buttons[BUTTON_UP].is_down = is_down;
-												} break;
-											case VK_DOWN:
-												{
-													AppInput.Buttons[BUTTON_DOWN].is_down = is_down;
-												} break;
-											case VK_LEFT:
-												{
-													AppInput.Buttons[BUTTON_LEFT].is_down = is_down;
-												} break;
-											case VK_RIGHT:
-												{
-													AppInput.Buttons[BUTTON_RIGHT].is_down = is_down;
-												} break;
-											case 0x31:
-												{
-													AppInput.Buttons[BUTTON_1].is_down = is_down;
-												} break;
-											case 0x32:
-												{
-													AppInput.Buttons[BUTTON_2].is_down = is_down;
-												} break;
-											case 0x33:
-												{
-													AppInput.Buttons[BUTTON_3].is_down = is_down;
-												} break;
-										}
+								if (was_down != is_down) {
+									switch (vk_code) {
+										case 'W':
+										{
+											AppInput.Buttons[BUTTON_W].is_down = is_down;
+										} break;
+										case 'S':
+										{
+											AppInput.Buttons[BUTTON_S].is_down = is_down;
+										} break;
+										case 'A':
+										{
+											AppInput.Buttons[BUTTON_A].is_down = is_down;
+										} break;
+										case 'D':
+										{
+											AppInput.Buttons[BUTTON_D].is_down = is_down;
+										} break;
+										case VK_UP:
+										{
+											AppInput.Buttons[BUTTON_UP].is_down = is_down;
+										} break;
+										case VK_DOWN:
+										{
+											AppInput.Buttons[BUTTON_DOWN].is_down = is_down;
+										} break;
+										case VK_LEFT:
+										{
+											AppInput.Buttons[BUTTON_LEFT].is_down = is_down;
+										} break;
+										case VK_RIGHT:
+										{
+											AppInput.Buttons[BUTTON_RIGHT].is_down = is_down;
+										} break;
+										case 0x31:
+										{
+											AppInput.Buttons[BUTTON_1].is_down = is_down;
+										} break;
+										case 0x32:
+										{
+											AppInput.Buttons[BUTTON_2].is_down = is_down;
+										} break;
+										case 0x33:
+										{
+											AppInput.Buttons[BUTTON_3].is_down = is_down;
+										} break;
 									}
-								} break;
-							default:
-								{
-									TranslateMessage(&Message);
-									DispatchMessage(&Message);
 								}
+							} break;
+							default:
+							{
+								TranslateMessage(&Message);
+								DispatchMessage(&Message);
+							}
 						}
 					}
 

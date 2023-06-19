@@ -5,7 +5,7 @@
 
 
 //
-// NOTE(Justin): Types
+// NOTE(Justin): Fundamental data types.
 //
 
 typedef int8_t s8;
@@ -23,7 +23,7 @@ typedef float f32;
 typedef double f64;
 
 //
-// NOTE(Justin): Defines
+// NOTE(Justin): Macros.
 //
 
 #define global_variable static
@@ -33,7 +33,7 @@ typedef double f64;
 #define ARRAY_COUNT(a) (sizeof(a) / sizeof(a[0]))
 #define ABS(x) ((x < 0) ? -(x): (x))
 
-#define KILOBYTES(count) (1024 * count)
+#define KILOBYTES(count) (1024 * (count))
 #define MEGABYTES(count) (1024 * KILOBYTES(count))
 #define GIGABYTES(count) (1024 * MEGABYTES(count))
 #define TERABYTES(count) (1024 * GIGABYTES(count))
@@ -42,7 +42,7 @@ typedef double f64;
 #define RAD32 (PI32 / 180.0f)
 
 #if APP_SLOW
-#define ASSERT(expression) if(!(expression)) {*(int *)0 = 0;}
+#define ASSERT(expression) if (!(expression)){*(int *)0 = 0;}
 #else
 #define ASSERT(expression)
 #endif
@@ -50,7 +50,7 @@ typedef double f64;
 inline u32
 u64_truncate_to_u32(u64 x)
 {
-	ASSERT(x <= 0xFFFFFFFF);
+	ASSERT(x <= 0xFFFFFFFF)
 	u32 Result = (u32)x;
 	return(Result);
 }
@@ -60,14 +60,13 @@ u64_truncate_to_u32(u64 x)
 //
 
 #if APP_INTERNAL
-struct debug_file_read_result
+typedef struct 
 {
 	u32 size;
 	void *memory;
-};
+} debug_file_read_result;
 
 internal debug_file_read_result debug_platform_file_read_entire(char *file_name);
-//internal void * debug_platform_file_read_entire(char *file_name);
 internal void debug_platform_file_free(void *memory);
 internal b32 debug_platform_file_write_entire(char *file_name, u32 size, void *memory);
 #endif
@@ -121,6 +120,8 @@ typedef struct
 	u64 transient_storage_size;
 
 } app_memory;
+
+
 
 #define SFOTWARE_RENDERER_PLATFORM_H
 #endif

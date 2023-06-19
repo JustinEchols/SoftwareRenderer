@@ -42,5 +42,25 @@ typedef struct
 	s32 y_end;
 } edge;
 
+typedef struct
+{
+	v3f Pos;
+	v3f Direction;
+	v3f Up;
+} camera;
+
+typedef struct
+{
+	camera Cameras[3];
+	u32 CameraIndex;
+
+	m4x4 MapToCamera;
+	m4x4 MapToPersp;
+	m4x4 MapToScreenSpace;
+
+	triangle Triangle;
+
+} app_state;
+
 #define SOFTWARE_RENDERER_H
 #endif

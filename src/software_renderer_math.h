@@ -196,16 +196,16 @@ operator -(v2f A, v2f B)
 inline f32
 v2f_innerf(v2f A, v2f B)
 {
-	f32 result = A.x * B.x + A.y * B.y;
-	return(result);
+	f32 Result = A.x * B.x + A.y * B.y;
+	return(Result);
 
 }
 
 inline f32
 v2f_length_squaredf(v2f A)
 {
-	f32 result = v2f_innerf(A, A);
-	return(result);
+	f32 Result = v2f_innerf(A, A);
+	return(Result);
 }
 
 // NOTE(Justin): When should these functions return a v2f?
@@ -268,19 +268,19 @@ v3f_create_from_v2f(v2f A, f32 z)
 inline f32
 v3f_innerf(v3f A, v3f B)
 {
-	f32 result = 0.0f;
+	f32 Result = 0.0f;
 
-	result = A.x * B.x + A.y * B.y + A.z * B.z;
+	Result = A.x * B.x + A.y * B.y + A.z * B.z;
 
-	return(result);
+	return(Result);
 }
 
 inline f32
 v3f_length_squared(v3f A)
 {
-	f32 result = v3f_innerf(A, A);
+	f32 Result = v3f_innerf(A, A);
 
-	return(result);
+	return(Result);
 }
 
 
@@ -312,7 +312,6 @@ inline v3f
 operator *(v3f A, f32 c)
 {
 	v3f Result = c * A;
-
 	return(Result);
 }
 
@@ -320,7 +319,6 @@ inline v3f
 operator ~(v3f A)
 {
 	v3f Result =  -1.0f * A;
-
 	return(Result);
 }
 
@@ -361,6 +359,7 @@ v3f_normalize(v3f A)
 	v3f Result = A;
 
 	f32 c = sqrt(v3f_innerf(A, A));
+	ASSERT(c != 0);
 	c = 1.0f / c;
 
 	Result = c * A;
@@ -449,7 +448,7 @@ operator *(m2x2 A, m2x2 B)
 }
 
 internal v2f
-transform(m4x4 A, v2f V)
+m2x2_transform(m2x2 A, v2f V)
 {
 	v2f R;
 
@@ -461,9 +460,9 @@ transform(m4x4 A, v2f V)
 }
 
 inline v2f
-operator *(m4x4 A, v2f V)
+operator *(m2x2 A, v2f V)
 {
-	v2f R = transform(A, V);//v4f_create_from_v3f(V, 1.0f)).xyz;
+	v2f R = m2x2_transform(A, V);
 	return(R);
 }
 
@@ -478,15 +477,6 @@ m2x2_det(m2x2 A)
 internal m2x2
 m2x2_adjoint_create(m2x2 A)
 {
-	/*
-	 * |a b|
-	 * |c d|
-	 *
-	 * |d -b|
-	 * |-c a|
-	 *
-	 * */
-
 	m2x2 Result;
 	Result.e[0][0] = A.e[1][1];
 	Result.e[1][1] = A.e[0][0];
@@ -495,6 +485,7 @@ m2x2_adjoint_create(m2x2 A)
 
 	return(Result);
 }
+
 //
 // NOTE(Justin): m4x4 operations
 //
@@ -511,7 +502,7 @@ operator *(m4x4 A, m4x4 B)
 		// For each col of B
 		for (int c = 0; c <= 3; c++) {
 
-			// Mul col of A by row of B (dot product)
+			// Mul row of A by col of B (dot product)
 			for (int i = 0; i <= 3; i++) {
 				R.e[r][c] += A.e[r][i] * B.e[i][c];
 			}
@@ -547,23 +538,6 @@ operator *(m4x4 A, v4f V)
 	v4f R = transform(A, V);
 	return(R);
 }
-
-#if 0
-inline m4x4
-m4x4_transpose(m4x4 A)
-{
-	m4x4 R;
-
-	f32 tmp = 0.0f;
-	for (int j = 0; j < 3; j++) {
-		for (int i = 0; i < 3; i++) {
-			tmp = A[i][j];
-			A[i][j] = A[j][i];
-			A[j][i] = tmp;
-		}
-	}
-}
-#endif
 
 inline m4x4
 m4x4_identity_create(void)
@@ -693,14 +667,16 @@ m4x4_camera_map_create(v3f CameraPos, v3f CameraDirection, v3f CameraUp)
 
 	// The viewing transformations and definitions produce a -1 so that the
 	// vector 0 0 1 is looking down the z axis
-	//v3f W = -1.0f * v3f_normalize(CameraDirection);
-	v3f W = v3f_normalize(CameraDirection);
+	// v3f W = -1.0f * v3f_normalize(CameraDirection);
 
+	v3f W = v3f_normalize(CameraDirection);
 	v3f U = v3f_cross(CameraUp, W);
+
 	U = v3f_normalize(U);
 
 	v3f V = v3f_cross(W, U);
 
+	// Translate to CameraPos
 	m4x4 MapToNewOrigin =
 	{
 		{{1, 0, 0, -CameraPos.x},
@@ -709,6 +685,7 @@ m4x4_camera_map_create(v3f CameraPos, v3f CameraDirection, v3f CameraUp)
 		{0, 0, 0, 1}},
 	};
 
+	// Transforms vector st it is expressed as a LC of U, V, and W.
 	m4x4 M =
 	{
 		{{U.x, V.x, W.x, 0},
@@ -721,8 +698,6 @@ m4x4_camera_map_create(v3f CameraPos, v3f CameraDirection, v3f CameraUp)
 
 	return(R);
 }
-
-
 
 internal m4x4
 m4x4_screen_space_map_create(int width, int height)

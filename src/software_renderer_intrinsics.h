@@ -1,6 +1,5 @@
 #if !defined(SOFTWARE_RENDERER_INTRINSICS_H)
 
-
 internal s32
 f32_round_to_s32(f32 x)
 {

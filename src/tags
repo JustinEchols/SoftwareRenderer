@@ -13,34 +13,40 @@ ABS	./software_renderer_platform.h	/^#define ABS(/;"	d
 ARRAY_COUNT	./software_renderer_platform.h	/^#define ARRAY_COUNT(/;"	d
 ASSERT	./software_renderer_platform.h	/^#define ASSERT(/;"	d
 AppInput	./win32_software_renderer.cpp	/^global_variable app_input AppInput;$/;"	v	typeref:typename:global_variable app_input
-BUTTON_1	./software_renderer_platform.h	/^	BUTTON_1,$/;"	e	enum:__anon02210d3d0203
-BUTTON_2	./software_renderer_platform.h	/^	BUTTON_2,$/;"	e	enum:__anon02210d3d0203
-BUTTON_3	./software_renderer_platform.h	/^	BUTTON_3,$/;"	e	enum:__anon02210d3d0203
-BUTTON_A	./software_renderer_platform.h	/^	BUTTON_A,$/;"	e	enum:__anon02210d3d0203
-BUTTON_COUNT	./software_renderer_platform.h	/^	BUTTON_COUNT,$/;"	e	enum:__anon02210d3d0203
-BUTTON_D	./software_renderer_platform.h	/^	BUTTON_D,$/;"	e	enum:__anon02210d3d0203
-BUTTON_DOWN	./software_renderer_platform.h	/^	BUTTON_DOWN,$/;"	e	enum:__anon02210d3d0203
-BUTTON_LEFT	./software_renderer_platform.h	/^	BUTTON_LEFT,$/;"	e	enum:__anon02210d3d0203
-BUTTON_RIGHT	./software_renderer_platform.h	/^	BUTTON_RIGHT,$/;"	e	enum:__anon02210d3d0203
-BUTTON_S	./software_renderer_platform.h	/^	BUTTON_S,$/;"	e	enum:__anon02210d3d0203
-BUTTON_UP	./software_renderer_platform.h	/^	BUTTON_UP,$/;"	e	enum:__anon02210d3d0203
-BUTTON_W	./software_renderer_platform.h	/^	BUTTON_W,$/;"	e	enum:__anon02210d3d0203
-Buttons	./software_renderer_platform.h	/^	app_button_state Buttons[BUTTON_COUNT];$/;"	m	struct:__anon02210d3d0408	typeref:typename:app_button_state[]
+BUTTON_1	./software_renderer_platform.h	/^	BUTTON_1,$/;"	e	enum:__anon02210d3d0303
+BUTTON_2	./software_renderer_platform.h	/^	BUTTON_2,$/;"	e	enum:__anon02210d3d0303
+BUTTON_3	./software_renderer_platform.h	/^	BUTTON_3,$/;"	e	enum:__anon02210d3d0303
+BUTTON_A	./software_renderer_platform.h	/^	BUTTON_A,$/;"	e	enum:__anon02210d3d0303
+BUTTON_COUNT	./software_renderer_platform.h	/^	BUTTON_COUNT,$/;"	e	enum:__anon02210d3d0303
+BUTTON_D	./software_renderer_platform.h	/^	BUTTON_D,$/;"	e	enum:__anon02210d3d0303
+BUTTON_DOWN	./software_renderer_platform.h	/^	BUTTON_DOWN,$/;"	e	enum:__anon02210d3d0303
+BUTTON_LEFT	./software_renderer_platform.h	/^	BUTTON_LEFT,$/;"	e	enum:__anon02210d3d0303
+BUTTON_RIGHT	./software_renderer_platform.h	/^	BUTTON_RIGHT,$/;"	e	enum:__anon02210d3d0303
+BUTTON_S	./software_renderer_platform.h	/^	BUTTON_S,$/;"	e	enum:__anon02210d3d0303
+BUTTON_UP	./software_renderer_platform.h	/^	BUTTON_UP,$/;"	e	enum:__anon02210d3d0303
+BUTTON_W	./software_renderer_platform.h	/^	BUTTON_W,$/;"	e	enum:__anon02210d3d0303
+Buttons	./software_renderer_platform.h	/^	app_button_state Buttons[BUTTON_COUNT];$/;"	m	struct:__anon02210d3d0508	typeref:typename:app_button_state[]
 CUBE	./software_renderer_math.h	/^#define CUBE(/;"	d
+Camera	./software_renderer_platform.h	/^	camera Camera;$/;"	m	struct:__anon02210d3d0708	typeref:typename:camera
 Center	./software_renderer.h	/^	v4f Center;$/;"	m	struct:__anonee9bfc390208	typeref:typename:v4f
 Center	./software_renderer.h	/^	v4f Center;$/;"	m	struct:__anonee9bfc390508	typeref:typename:v4f
 Color	./software_renderer.h	/^	v3f Color;$/;"	m	struct:__anonee9bfc390308	typeref:typename:v3f
 CommonCompilerFlags	./build.bat	/^REM 		CORRECT:	set CommonCompilerFlags=$/;"	v
 CommonCompilerFlags	./build.bat	/^REM 		WRONG:		set CommonCompilerFlags =$/;"	v
 Dim	./software_renderer.h	/^	v2f Dim;$/;"	m	struct:__anonee9bfc390508	typeref:typename:v2f
+Direction	./software_renderer.h	/^	v3f Direction;$/;"	m	struct:__anonee9bfc390708	typeref:typename:v3f
 GIGABYTES	./software_renderer_platform.h	/^#define GIGABYTES(/;"	d
 GLOBAL_RUNNING	./win32_software_renderer.cpp	/^global_variable b32 GLOBAL_RUNNING;$/;"	v	typeref:typename:global_variable b32
 Info	./win32_software_renderer.h	/^	BITMAPINFO Info;$/;"	m	struct:__anon57395dab0108	typeref:typename:BITMAPINFO
 KILOBYTES	./software_renderer_platform.h	/^#define KILOBYTES(/;"	d
 MEGABYTES	./software_renderer_platform.h	/^#define MEGABYTES(/;"	d
+MapToCamera	./software_renderer_platform.h	/^	m4x4 MapToCamera;$/;"	m	struct:__anon02210d3d0708	typeref:typename:m4x4
+MapToPersp	./software_renderer_platform.h	/^	m4x4 MapToPersp;$/;"	m	struct:__anon02210d3d0708	typeref:typename:m4x4
+MapToScreen	./software_renderer_platform.h	/^	m4x4 MapToScreen;$/;"	m	struct:__anon02210d3d0708	typeref:typename:m4x4
 Max	./software_renderer.h	/^	v4f Max;$/;"	m	struct:__anonee9bfc390108	typeref:typename:v4f
 Min	./software_renderer.h	/^	v4f Min;$/;"	m	struct:__anonee9bfc390108	typeref:typename:v4f
 PI32	./software_renderer_platform.h	/^#define PI32 /;"	d
+Pos	./software_renderer.h	/^	v3f Pos;$/;"	m	struct:__anonee9bfc390708	typeref:typename:v3f
 RAD32	./software_renderer_platform.h	/^#define RAD32 /;"	d
 SFOTWARE_RENDERER_PLATFORM_H	./software_renderer_platform.h	/^#define SFOTWARE_RENDERER_PLATFORM_H$/;"	d
 SOFTWARE_RENDERER_H	./software_renderer.h	/^#define SOFTWARE_RENDERER_H$/;"	d
@@ -48,17 +54,21 @@ SOFTWARE_RENDERER_INTRINSICS_H	./software_renderer_intrinsics.h	/^#define SOFTWA
 SOFTWARE_RENDERER_MATH_H	./software_renderer_math.h	/^#define SOFTWARE_RENDERER_MATH_H$/;"	d
 SQUARE	./software_renderer_math.h	/^#define SQUARE(/;"	d
 TERABYTES	./software_renderer_platform.h	/^#define TERABYTES(/;"	d
+Triangle	./software_renderer_platform.h	/^	triangle Triangle;$/;"	m	struct:__anon02210d3d0708	typeref:typename:triangle
 Triangles	./software_renderer.h	/^	triangle Triangles[2];$/;"	m	struct:__anonee9bfc390408	typeref:typename:triangle[2]
+Up	./software_renderer.h	/^	v3f Up;$/;"	m	struct:__anonee9bfc390708	typeref:typename:v3f
 Vertices	./software_renderer.h	/^	v4f Vertices[3];$/;"	m	struct:__anonee9bfc390308	typeref:typename:v4f[3]
 WIN32_SOFTWARE_RENDERER_H	./win32_software_renderer.h	/^#define WIN32_SOFTWARE_RENDERER_H$/;"	d
 Win32BackBuffer	./win32_software_renderer.cpp	/^global_variable win32_back_buffer Win32BackBuffer;$/;"	v	typeref:typename:global_variable win32_back_buffer
 WinMain	./win32_software_renderer.cpp	/^WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)$/;"	f	typeref:typename:int CALLBACK
 __	./software_renderer_math.h	/^		f32 u, v, __;$/;"	m	struct:v3f::__anon6f1b99820608	typeref:typename:f32
 __anon02210d3d0108	./software_renderer_platform.h	/^{$/;"	s
-__anon02210d3d0203	./software_renderer_platform.h	/^{$/;"	g
-__anon02210d3d0308	./software_renderer_platform.h	/^{$/;"	s
+__anon02210d3d0208	./software_renderer_platform.h	/^{$/;"	s
+__anon02210d3d0303	./software_renderer_platform.h	/^{$/;"	g
 __anon02210d3d0408	./software_renderer_platform.h	/^{$/;"	s
 __anon02210d3d0508	./software_renderer_platform.h	/^{$/;"	s
+__anon02210d3d0608	./software_renderer_platform.h	/^{$/;"	s
+__anon02210d3d0708	./software_renderer_platform.h	/^{$/;"	s
 __anon57395dab0108	./win32_software_renderer.h	/^{$/;"	s
 __anon57395dab0208	./win32_software_renderer.h	/^{$/;"	s
 __anon6f1b99820108	./software_renderer_math.h	/^	{$/;"	s	union:v2f
@@ -87,20 +97,23 @@ __anonee9bfc390308	./software_renderer.h	/^{$/;"	s
 __anonee9bfc390408	./software_renderer.h	/^{$/;"	s
 __anonee9bfc390508	./software_renderer.h	/^{$/;"	s
 __anonee9bfc390608	./software_renderer.h	/^{$/;"	s
+__anonee9bfc390708	./software_renderer.h	/^{$/;"	s
 a	./software_renderer_math.h	/^		f32 a;$/;"	m	struct:v4f::__anon6f1b99820f08	typeref:typename:f32
-app_back_buffer	./software_renderer_platform.h	/^} app_back_buffer;$/;"	t	typeref:struct:__anon02210d3d0108
-app_button_state	./software_renderer_platform.h	/^} app_button_state;$/;"	t	typeref:struct:__anon02210d3d0308
-app_input	./software_renderer_platform.h	/^} app_input;$/;"	t	typeref:struct:__anon02210d3d0408
-app_memory	./software_renderer_platform.h	/^} app_memory;$/;"	t	typeref:struct:__anon02210d3d0508
+app_back_buffer	./software_renderer_platform.h	/^} app_back_buffer;$/;"	t	typeref:struct:__anon02210d3d0208
+app_button_state	./software_renderer_platform.h	/^} app_button_state;$/;"	t	typeref:struct:__anon02210d3d0408
+app_input	./software_renderer_platform.h	/^} app_input;$/;"	t	typeref:struct:__anon02210d3d0508
+app_memory	./software_renderer_platform.h	/^} app_memory;$/;"	t	typeref:struct:__anon02210d3d0608
+app_state	./software_renderer_platform.h	/^} app_state;$/;"	t	typeref:struct:__anon02210d3d0708
 app_update_and_render	./software_renderer.cpp	/^app_update_and_render(app_back_buffer *AppBackBuffer, app_input *AppInput, app_memory *AppMemory/;"	f	typeref:typename:internal void
 axis_draw	./software_renderer.cpp	/^axis_draw(app_back_buffer *AppBackBuffer, m4x4 M, v4f Position)$/;"	f	typeref:typename:internal void
 b	./software_renderer_math.h	/^				f32 r, g, b;$/;"	m	struct:v4f::__anon6f1b99820f08::__anon6f1b9982100a::__anon6f1b99821108	typeref:typename:f32
 b	./software_renderer_math.h	/^		f32 r, g, b;$/;"	m	struct:v3f::__anon6f1b99820708	typeref:typename:f32
 b32	./software_renderer_platform.h	/^typedef s32 b32;$/;"	t	typeref:typename:s32
 barycentric_cood	./software_renderer.cpp	/^barycentric_cood(v3f X, v3f Y, v3f Z, v3f P)$/;"	f	typeref:typename:internal v3f
-bytes_per_pixel	./software_renderer_platform.h	/^	int bytes_per_pixel;$/;"	m	struct:__anon02210d3d0108	typeref:typename:int
+bytes_per_pixel	./software_renderer_platform.h	/^	int bytes_per_pixel;$/;"	m	struct:__anon02210d3d0208	typeref:typename:int
 bytes_per_pixel	./win32_software_renderer.h	/^	int bytes_per_pixel;$/;"	m	struct:__anon57395dab0108	typeref:typename:int
-changed	./software_renderer_platform.h	/^	b32 changed;$/;"	m	struct:__anon02210d3d0308	typeref:typename:b32
+camera	./software_renderer.h	/^} camera;$/;"	t	typeref:struct:__anonee9bfc390708
+changed	./software_renderer_platform.h	/^	b32 changed;$/;"	m	struct:__anon02210d3d0408	typeref:typename:b32
 circle	./software_renderer.h	/^} circle;$/;"	t	typeref:struct:__anonee9bfc390208
 circle_draw	./software_renderer.cpp	/^circle_draw(app_back_buffer *AppBackBuffer, circle Circle, v3f Color)$/;"	f	typeref:typename:internal void
 color_convert_v3f_to_u32	./software_renderer.cpp	/^color_convert_v3f_to_u32(v3f Color)$/;"	f	typeref:typename:internal u32
@@ -108,7 +121,7 @@ color_rand_init	./software_renderer.cpp	/^color_rand_init()$/;"	f	typeref:typena
 common_compiler_flags	./build.bat	/^set common_compiler_flags= -nologo -Od -W4 -Zi -wd4100 -wd4201 -wd4189 -wd4505 -DAPP_SLOW=1 -DAP/;"	v
 common_linker_flags	./build.bat	/^set common_linker_flags= user32.lib Gdi32.lib Winmm.lib$/;"	v
 cube	./software_renderer.h	/^} cube;$/;"	t	typeref:struct:__anonee9bfc390508
-debug_file_read_result	./software_renderer_platform.h	/^struct debug_file_read_result$/;"	s
+debug_file_read_result	./software_renderer_platform.h	/^} debug_file_read_result;$/;"	t	typeref:struct:__anon02210d3d0108
 debug_platform_file_free	./win32_software_renderer.cpp	/^debug_platform_file_free(void *memory)$/;"	f	typeref:typename:internal void
 debug_platform_file_read_entire	./win32_software_renderer.cpp	/^debug_platform_file_read_entire(char *file_name)$/;"	f	typeref:typename:internal debug_file_read_result
 debug_platform_file_write_entire	./win32_software_renderer.cpp	/^debug_platform_file_write_entire(char *file_name, u32 size, void *memory)$/;"	f	typeref:typename:internal b32
@@ -129,7 +142,7 @@ f64	./software_renderer_platform.h	/^typedef double f64;$/;"	t	typeref:typename:
 g	./software_renderer_math.h	/^				f32 r, g, b;$/;"	m	struct:v4f::__anon6f1b99820f08::__anon6f1b9982100a::__anon6f1b99821108	typeref:typename:f32
 g	./software_renderer_math.h	/^		f32 r, g, b;$/;"	m	struct:v3f::__anon6f1b99820708	typeref:typename:f32
 global_variable	./software_renderer_platform.h	/^#define global_variable /;"	d
-height	./software_renderer_platform.h	/^	int height;$/;"	m	struct:__anon02210d3d0108	typeref:typename:int
+height	./software_renderer_platform.h	/^	int height;$/;"	m	struct:__anon02210d3d0208	typeref:typename:int
 height	./win32_software_renderer.h	/^	int height;$/;"	m	struct:__anon57395dab0108	typeref:typename:int
 height	./win32_software_renderer.h	/^	int height;$/;"	m	struct:__anon57395dab0208	typeref:typename:int
 ignored0_	./software_renderer_math.h	/^		f32 ignored0_;$/;"	m	struct:v3f::__anon6f1b99820808	typeref:typename:f32
@@ -143,8 +156,8 @@ ignored3_	./software_renderer_math.h	/^		f32 ignored3_;$/;"	m	struct:v4f::__anon
 ignored4_	./software_renderer_math.h	/^		f32 ignored4_;$/;"	m	struct:v4f::__anon6f1b99821408	typeref:typename:f32
 ignored5_	./software_renderer_math.h	/^		f32 ignored5_;$/;"	m	struct:v4f::__anon6f1b99821408	typeref:typename:f32
 internal	./software_renderer_platform.h	/^#define internal /;"	d
-is_down	./software_renderer_platform.h	/^	b32 is_down;$/;"	m	struct:__anon02210d3d0308	typeref:typename:b32
-is_initialized	./software_renderer_platform.h	/^	b32 is_initialized;$/;"	m	struct:__anon02210d3d0508	typeref:typename:b32
+is_down	./software_renderer_platform.h	/^	b32 is_down;$/;"	m	struct:__anon02210d3d0408	typeref:typename:b32
+is_initialized	./software_renderer_platform.h	/^	b32 is_initialized;$/;"	m	struct:__anon02210d3d0608	typeref:typename:b32
 lerp_color	./software_renderer.cpp	/^lerp_color(v3f ColorA, v3f ColorB, f32 t)$/;"	f	typeref:typename:internal v3f
 lerp_points	./software_renderer.cpp	/^lerp_points(v4f P1, v4f P2, f32 t)$/;"	f	typeref:typename:internal v4f
 line_draw_dda	./software_renderer.cpp	/^line_draw_dda(app_back_buffer *AppBackBuffer, v2f P1, v2f P2, v3f Color)$/;"	f	typeref:typename:internal void
@@ -152,6 +165,7 @@ local_persist	./software_renderer_platform.h	/^#define local_persist /;"	d
 m2x2	./software_renderer_math.h	/^struct m2x2$/;"	s
 m2x2_adjoint_create	./software_renderer_math.h	/^m2x2_adjoint_create(m2x2 A)$/;"	f	typeref:typename:internal m2x2
 m2x2_det	./software_renderer_math.h	/^m2x2_det(m2x2 A)$/;"	f	typeref:typename:internal f32
+m2x2_transform	./software_renderer_math.h	/^m2x2_transform(m2x2 A, v2f V)$/;"	f	typeref:typename:internal v2f
 m4x4	./software_renderer_math.h	/^struct m4x4$/;"	s
 m4x4_camera_map_create	./software_renderer_math.h	/^m4x4_camera_map_create(v3f CameraPos, v3f CameraDirection, v3f CameraUp)$/;"	f	typeref:typename:internal m4x4
 m4x4_identity_create	./software_renderer_math.h	/^m4x4_identity_create(void)$/;"	f	typeref:typename:m4x4
@@ -165,15 +179,15 @@ m4x4_screen_space_map_create	./software_renderer_math.h	/^m4x4_screen_space_map_
 m4x4_translation_create	./software_renderer_math.h	/^m4x4_translation_create(v3f V)$/;"	f	typeref:typename:m4x4
 m4x4_translation_to_origin_create	./software_renderer_math.h	/^m4x4_translation_to_origin_create(v3f V)$/;"	f	typeref:typename:internal m4x4
 memory	./software_renderer_platform.h	/^	void *memory;$/;"	m	struct:__anon02210d3d0108	typeref:typename:void *
-memory	./software_renderer_platform.h	/^	void *memory;$/;"	m	struct:debug_file_read_result	typeref:typename:void *
+memory	./software_renderer_platform.h	/^	void *memory;$/;"	m	struct:__anon02210d3d0208	typeref:typename:void *
 memory	./win32_software_renderer.h	/^	void *memory;$/;"	m	struct:__anon57395dab0108	typeref:typename:void *
 memory	./win32_software_renderer.h	/^	void *memory;$/;"	m	struct:__anon57395dab0208	typeref:typename:void *
 operator *	./software_renderer_math.h	/^operator *(f32 c, v2f A)$/;"	f	typeref:typename:v2f
 operator *	./software_renderer_math.h	/^operator *(f32 c, v3f A)$/;"	f	typeref:typename:v3f
 operator *	./software_renderer_math.h	/^operator *(f32 c, v4f A)$/;"	f	typeref:typename:v4f
 operator *	./software_renderer_math.h	/^operator *(m2x2 A, m2x2 B)$/;"	f	typeref:typename:internal m2x2
+operator *	./software_renderer_math.h	/^operator *(m2x2 A, v2f V)$/;"	f	typeref:typename:v2f
 operator *	./software_renderer_math.h	/^operator *(m4x4 A, m4x4 B)$/;"	f	typeref:typename:internal m4x4
-operator *	./software_renderer_math.h	/^operator *(m4x4 A, v2f V)$/;"	f	typeref:typename:v2f
 operator *	./software_renderer_math.h	/^operator *(m4x4 A, v3f V)$/;"	f	typeref:typename:v3f
 operator *	./software_renderer_math.h	/^operator *(m4x4 A, v4f V)$/;"	f	typeref:typename:v4f
 operator *	./software_renderer_math.h	/^operator *(v2f A, f32 c)$/;"	f	typeref:typename:v2f
@@ -189,8 +203,8 @@ operator -	./software_renderer_math.h	/^operator -(v3f A, v3f B)$/;"	f	typeref:t
 operator -	./software_renderer_math.h	/^operator -(v4f A, v4f B)$/;"	f	typeref:typename:v4f
 operator ~	./software_renderer_math.h	/^operator ~(v2f A)$/;"	f	typeref:typename:v2f
 operator ~	./software_renderer_math.h	/^operator ~(v3f A)$/;"	f	typeref:typename:v3f
-permanent_storage	./software_renderer_platform.h	/^	void *permanent_storage;$/;"	m	struct:__anon02210d3d0508	typeref:typename:void *
-permanent_storage_size	./software_renderer_platform.h	/^	u64 permanent_storage_size;$/;"	m	struct:__anon02210d3d0508	typeref:typename:u64
+permanent_storage	./software_renderer_platform.h	/^	void *permanent_storage;$/;"	m	struct:__anon02210d3d0608	typeref:typename:void *
+permanent_storage_size	./software_renderer_platform.h	/^	u64 permanent_storage_size;$/;"	m	struct:__anon02210d3d0608	typeref:typename:u64
 pixel_set	./software_renderer.cpp	/^pixel_set(app_back_buffer *AppBackBuffer, v2f PixelPos, v3f Color)$/;"	f	typeref:typename:internal void
 r	./software_renderer_math.h	/^				f32 r, g, b;$/;"	m	struct:v4f::__anon6f1b99820f08::__anon6f1b9982100a::__anon6f1b99821108	typeref:typename:f32
 r	./software_renderer_math.h	/^		f32 r, g, b;$/;"	m	struct:v3f::__anon6f1b99820708	typeref:typename:f32
@@ -204,17 +218,16 @@ s64	./software_renderer_platform.h	/^typedef int64_t s64;$/;"	t	typeref:typename
 s8	./software_renderer_platform.h	/^typedef int8_t s8;$/;"	t	typeref:typename:int8_t
 scan_buffer	./win32_software_renderer.h	/^} scan_buffer;$/;"	t	typeref:struct:__anon57395dab0208
 scanline_draw	./software_renderer.cpp	/^scanline_draw(app_back_buffer *AppBackBuffer, edge Left, edge Right, s32 scanline)$/;"	f	typeref:typename:internal void
-size	./software_renderer_platform.h	/^	u32 size;$/;"	m	struct:debug_file_read_result	typeref:typename:u32
+size	./software_renderer_platform.h	/^	u32 size;$/;"	m	struct:__anon02210d3d0108	typeref:typename:u32
 sqauare_rootf	./software_renderer_intrinsics.h	/^sqauare_rootf(f32 x)$/;"	f	typeref:typename:f32
 square	./software_renderer.h	/^} square;$/;"	t	typeref:struct:__anonee9bfc390408
-stride	./software_renderer_platform.h	/^	int stride;$/;"	m	struct:__anon02210d3d0108	typeref:typename:int
+stride	./software_renderer_platform.h	/^	int stride;$/;"	m	struct:__anon02210d3d0208	typeref:typename:int
 stride	./win32_software_renderer.h	/^	int stride;$/;"	m	struct:__anon57395dab0108	typeref:typename:int
 tick_frequency	./win32_software_renderer.cpp	/^global_variable LARGE_INTEGER tick_frequency;$/;"	v	typeref:typename:global_variable LARGE_INTEGER
-time_delta	./software_renderer_platform.h	/^	f32 time_delta;$/;"	m	struct:__anon02210d3d0408	typeref:typename:f32
-transform	./software_renderer_math.h	/^transform(m4x4 A, v2f V)$/;"	f	typeref:typename:internal v2f
+time_delta	./software_renderer_platform.h	/^	f32 time_delta;$/;"	m	struct:__anon02210d3d0508	typeref:typename:f32
 transform	./software_renderer_math.h	/^transform(m4x4 A, v4f V)$/;"	f	typeref:typename:internal v4f
-transient_storage	./software_renderer_platform.h	/^	void *transient_storage;$/;"	m	struct:__anon02210d3d0508	typeref:typename:void *
-transient_storage_size	./software_renderer_platform.h	/^	u64 transient_storage_size;$/;"	m	struct:__anon02210d3d0508	typeref:typename:u64
+transient_storage	./software_renderer_platform.h	/^	void *transient_storage;$/;"	m	struct:__anon02210d3d0608	typeref:typename:void *
+transient_storage_size	./software_renderer_platform.h	/^	u64 transient_storage_size;$/;"	m	struct:__anon02210d3d0608	typeref:typename:u64
 triangle	./software_renderer.h	/^} triangle;$/;"	t	typeref:struct:__anonee9bfc390308
 triangle_rand_init	./software_renderer.cpp	/^triangle_rand_init()$/;"	f	typeref:typename:internal triangle
 triangle_scan_interpolation	./software_renderer.cpp	/^triangle_scan_interpolation(app_back_buffer *AppBackBuffer, triangle *Triangle)$/;"	f	typeref:typename:internal void
@@ -249,7 +262,7 @@ v4f_create_from_v3f	./software_renderer_math.h	/^v4f_create_from_v3f(v3f A, f32 
 v4f_rand_init	./software_renderer.cpp	/^v4f_rand_init()$/;"	f	typeref:typename:internal v4f
 v__	./software_renderer_math.h	/^		v2f v__;$/;"	m	struct:v3f::__anon6f1b99820b08	typeref:typename:v2f
 w	./software_renderer_math.h	/^		f32 w;$/;"	m	struct:v4f::__anon6f1b99820c08	typeref:typename:f32
-width	./software_renderer_platform.h	/^	int width;$/;"	m	struct:__anon02210d3d0108	typeref:typename:int
+width	./software_renderer_platform.h	/^	int width;$/;"	m	struct:__anon02210d3d0208	typeref:typename:int
 width	./win32_software_renderer.h	/^	int width;$/;"	m	struct:__anon57395dab0108	typeref:typename:int
 win32_back_buffer	./win32_software_renderer.h	/^} win32_back_buffer;$/;"	t	typeref:struct:__anon57395dab0108
 win32_back_buffer_resize	./win32_software_renderer.cpp	/^win32_back_buffer_resize(win32_back_buffer *Win32BackBuffer, int width, int height)$/;"	f	typeref:typename:internal void
