@@ -1,5 +1,6 @@
 #if !defined(SFOTWARE_RENDERER_PLATFORM_H)
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -66,9 +67,18 @@ typedef struct
 	void *memory;
 } debug_file_read_result;
 
-internal debug_file_read_result debug_platform_file_read_entire(char *file_name);
-internal void debug_platform_file_free(void *memory);
-internal b32 debug_platform_file_write_entire(char *file_name, u32 size, void *memory);
+
+#define DEBUG_PLATFORM_FILE_FREE(name) void name(void *memory)
+typedef DEBUG_PLATFORM_FILE_FREE(debug_platform_file_free_func);
+
+#define DEBUG_PLATFORM_FILE_READ_ENTIRE(name) debug_file_read_result name(char * file_name)
+typedef DEBUG_PLATFORM_FILE_READ_ENTIRE(debug_platform_file_read_entire_func);
+
+#define DEBUG_PLATFORM_FILE_WRITE_ENTIRE(name) b32 name(char *file_name, u32 size, void *memory)
+typedef DEBUG_PLATFORM_FILE_WRITE_ENTIRE(debug_platform_file_write_entire_func);
+
+
+
 #endif
 
 typedef struct
@@ -118,6 +128,10 @@ typedef struct
 	void *transient_storage;
 	u64 permanent_storage_size;
 	u64 transient_storage_size;
+
+	debug_platform_file_read_entire_func	*debug_platform_file_read_entire;
+	debug_platform_file_write_entire_func	*debug_platform_file_write_entire;
+	debug_platform_file_free_func			*debug_platform_file_free;
 
 } app_memory;
 

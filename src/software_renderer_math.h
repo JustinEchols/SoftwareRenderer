@@ -1,5 +1,5 @@
 #if !defined(SOFTWARE_RENDERER_MATH_H)
-#include "math.h"
+#include <math.h>
 
 #define SQUARE(x) ((x) * (x))
 #define CUBE(x) ((x) * (x) * (x))

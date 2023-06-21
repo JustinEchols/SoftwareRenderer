@@ -42,6 +42,13 @@ typedef struct
 	s32 y_end;
 } edge;
 
+#define APP_UPDATE_AND_RENDER(name) void name(app_back_buffer *AppBackBuffer, app_input *AppInput, app_memory *AppMemory)
+typedef APP_UPDATE_AND_RENDER(app_update_and_render_func);
+APP_UPDATE_AND_RENDER(app_update_and_render_stub)
+{
+}
+
+
 typedef struct
 {
 	v3f Pos;

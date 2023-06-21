@@ -1,5 +1,4 @@
 #include "software_renderer.h"
-#include "software_renderer_math.h"
 
 internal v3f
 color_rand_init()
@@ -408,11 +407,12 @@ typedef struct
 	
 } loaded_bitmap;
 
+#if 0
 internal loaded_bitmap 
 debug_file_bitmap_read_entire(char *file_name)
 {
 	loaded_bitmap Result = {};
-	debug_file_read_result File = debug_platform_file_read_entire(file_name);
+	debug_file_read_result File = DEBUG_PLATFORM_FILE_READ_ENTIRE(file_name);
 	if (File.memory) {
 		bitmap_header *BitmapHeader = (bitmap_header *)File.memory;
 		Result.memory = (void *)((u8 *)BitmapHeader + BitmapHeader->BitmapOffset);
@@ -422,6 +422,7 @@ debug_file_bitmap_read_entire(char *file_name)
 	}
 	return(Result);
 }
+#endif
 
 internal void
 bitmap_draw(app_back_buffer *AppBackBuffer, loaded_bitmap *Bitmap)
@@ -440,16 +441,13 @@ bitmap_draw(app_back_buffer *AppBackBuffer, loaded_bitmap *Bitmap)
 	}
 }
 
-internal void
-app_update_and_render(app_back_buffer *AppBackBuffer, app_input *AppInput, app_memory *AppMemory)
+extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)//app_back_buffer *AppBackBuffer, app_input *AppInput, app_memory *AppMemory)
 {
 	app_state *AppState = (app_state *)AppMemory->permanent_storage;
 	//ASSERT(1 == 0)
 	ASSERT(sizeof(AppState) <= 0xFFFFFFFF);
 
 	if (!AppMemory->is_initialized) {
-
-
 		v3f CameraPos = {0.0f, 0.0f, 1.0f};
 		v3f CameraDirection = {0.0f, 0.0f, 1.0f};
 		v3f CameraUp = {0.0f, 1.0f, 0.0f};
@@ -500,8 +498,8 @@ app_update_and_render(app_back_buffer *AppBackBuffer, app_input *AppInput, app_m
 
 	//debug_file_read_result file = debug_platform_file_read_entire("structured_art.bmp");
 	//bitmap_header *BitmapHeader = (bitmap_header *)file.memory;
-	loaded_bitmap Bitmap = debug_file_bitmap_read_entire("structured_art.bmp");
-	bitmap_draw(AppBackBuffer, &Bitmap);
+//	loaded_bitmap Bitmap = debug_file_bitmap_read_entire("structured_art.bmp");
+//	bitmap_draw(AppBackBuffer, &Bitmap);
 
 	//
 	// NOTE(Justin): AppInput/ Do something smarter here...
@@ -617,7 +615,6 @@ app_update_and_render(app_back_buffer *AppBackBuffer, app_input *AppInput, app_m
 		Fragment.Vertices[i] = MapToScreenSpace * MapToPersp * MapToCamera * Triangle->Vertices[i];
 		Fragment.Vertices[i] = (1.0f / Fragment.Vertices[i].w) * Fragment.Vertices[i];
 	}
-
 	triangle_scan_interpolation(AppBackBuffer, &Fragment);
 
 #if 0
@@ -629,5 +626,4 @@ app_update_and_render(app_back_buffer *AppBackBuffer, app_input *AppInput, app_m
 		line_draw_dda(&AppBackBuffer, PositionFrag.xy, Fragment.Vertices[i].xy, Color);
 	}
 #endif
-
 }
