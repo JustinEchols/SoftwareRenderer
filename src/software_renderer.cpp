@@ -396,17 +396,6 @@ typedef struct
 } bitmap_header;
 #pragma pack(pop)
 
-typedef struct
-{
-	void *memory;
-	s32 width;           
-	s32 height;          
-
-	//stride?
-	//bytes_per_pixel?
-	
-} loaded_bitmap;
-
 #if 0
 internal loaded_bitmap 
 debug_file_bitmap_read_entire(char *file_name)
@@ -441,11 +430,10 @@ bitmap_draw(app_back_buffer *AppBackBuffer, loaded_bitmap *Bitmap)
 	}
 }
 
-extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)//app_back_buffer *AppBackBuffer, app_input *AppInput, app_memory *AppMemory)
+extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 {
 	app_state *AppState = (app_state *)AppMemory->permanent_storage;
-	//ASSERT(1 == 0)
-	ASSERT(sizeof(AppState) <= 0xFFFFFFFF);
+	//ASSERT(sizeof(AppState) <= 0xFFFFFFFF);
 
 	if (!AppMemory->is_initialized) {
 		v3f CameraPos = {0.0f, 0.0f, 1.0f};
@@ -484,7 +472,6 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)//app_back_buffer *AppBac
 		AppState->Triangle.Vertices[0] = {-0.5f, -0.5f, 0.0f, 1.0f};
 		AppState->Triangle.Vertices[1] = {0.5f, 0.0f, 0.0f, 1.0f};
 		AppState->Triangle.Vertices[2] = {0.0f, 0.5f, 0.0f, 1.0f};
-
 		AppMemory->is_initialized = true;
 	}
 
@@ -496,10 +483,8 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)//app_back_buffer *AppBac
 		}
 	}
 
-	//debug_file_read_result file = debug_platform_file_read_entire("structured_art.bmp");
-	//bitmap_header *BitmapHeader = (bitmap_header *)file.memory;
-//	loaded_bitmap Bitmap = debug_file_bitmap_read_entire("structured_art.bmp");
-//	bitmap_draw(AppBackBuffer, &Bitmap);
+	
+
 
 	//
 	// NOTE(Justin): AppInput/ Do something smarter here...
@@ -514,7 +499,6 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)//app_back_buffer *AppBac
 	// TODO(Justin): Instead of getting three pointers here first determine
 	// which camera to show then get a pointer to it.
 	//
-	// Do we even need the b32 of using camera?
 
 
 	camera *Camera;
@@ -580,8 +564,7 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)//app_back_buffer *AppBac
 	//  TODO(Justin): Update the Screen Space map whenever the size of the
 	//  window changes. Right now we are creating a Screen Space map each time
 	//  which is uneccesary.
-	//
-	//m4x4 MapToScreenSpace = AppState->MapToScreenSpace;
+
 	m4x4 MapToScreenSpace = m4x4_screen_space_map_create(AppBackBuffer->width, AppBackBuffer->height);
 	m4x4 MapToPersp = AppState->MapToPersp;
 
@@ -592,7 +575,7 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)//app_back_buffer *AppBac
 	// NOTE(Justin): Render triangle
 	//
 
-	m4x4 RotateY = m4x4_rotation_y_create((time_delta * 2 * PI32 / 4.0f));
+	m4x4 RotateY = m4x4_rotation_y_create((time_delta * 2.0f * PI32 / 4.0f));
 	triangle *Triangle = &AppState->Triangle;
 	triangle Fragment;
 	for (u32 i = 0; i < 3; i++) {

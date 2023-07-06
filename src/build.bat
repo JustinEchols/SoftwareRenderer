@@ -8,8 +8,8 @@ IF NOT EXIST ..\build mkdir ..\build
 pushd ..\build
 del *.pdb > NUL 2> NUL
 echo WAITING FOR PDB > lock.tmp
-cl %common_compiler_flags% ..\src\software_renderer.cpp -Fmsoftware_renderer.map -LD /link %common_linker_flags% -incremental:no -opt:ref -PDB:win32_software_renderer%random%.pdb -EXPORT:app_update_and_render
-cl %common_compiler_flags% ..\src\win32_software_renderer.cpp -Fmwin32_software_renderer.map /link %common_linker_flags%
+cl %common_compiler_flags% ..\src\software_renderer.cpp -Fmsoftware_renderer.map -LD /link %common_linker_flags% -incremental:no -opt:ref -PDB:software_renderer%random%.pdb -EXPORT:app_update_and_render
+cl %common_compiler_flags% ..\src\win32_software_renderer.cpp -Fmwin32_software_renderer.map /link %common_linker_flags% -incremental:no
 popd
 
 REM  ---------------------------COMPILER FLAGS------------------------------

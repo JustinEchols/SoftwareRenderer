@@ -48,13 +48,20 @@ APP_UPDATE_AND_RENDER(app_update_and_render_stub)
 {
 }
 
-
 typedef struct
 {
 	v3f Pos;
 	v3f Direction;
 	v3f Up;
 } camera;
+
+typedef struct
+{
+	void *memory;
+	s32 width;           
+	s32 height;          
+
+} loaded_bitmap;
 
 typedef struct
 {
@@ -67,6 +74,7 @@ typedef struct
 
 	triangle Triangle;
 
+	loaded_bitmap Bitmap;
 } app_state;
 
 #define SOFTWARE_RENDERER_H
