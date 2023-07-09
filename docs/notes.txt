@@ -37,3 +37,29 @@
 // will rotate by a different amount based off the length of the
 // position vector. 
 //
+
+// NOTE(Justin): We apply any rigid body transformations to
+// the triangle itself. After applying the transformations
+// we obtain a copy of the triangle then apply the viewing
+// transformations and finally the w divide to the
+// copy. If we apply the viewing transformations and
+// w divide to the orignal triangle we can no
+// longer use the data of the triangle unless we undo the
+// w divide and viewing transformation to convert
+// the triangle data back to the proper space. So it is easy
+// to just obtain a copy of the triagnle and apply the
+// viewing and division operations on the triangle and copy
+// this data to the frame buffer. This is the reason for
+// creating the triagnle called Fragment.
+
+//
+// NOTE(Justin): Update camera transform. Only need to do this
+// whenever a switch happens. Not every frame. TODO(Justin): Fix
+// this so that we do it only whenver a change happens. Do it
+// inside the if-else block app_input logic? Or just count the
+// button presses. That is enough information to determine
+// whether or not there exists a need to switch cameras. If so
+// then can check which camera, if not skip 
+//
+// // if width height of back buffer changed
+// //	create new screen space map.
