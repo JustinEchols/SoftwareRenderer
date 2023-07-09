@@ -141,8 +141,6 @@ lerp_color(v3f ColorA, v3f ColorB, f32 t)
 	return(Result);
 }
 
-
-
 internal void
 rectangle_draw(app_back_buffer *AppBackBuffer, rectangle R, v3f Color)
 {
@@ -262,6 +260,7 @@ barycentric_cood(v3f X, v3f Y, v3f Z, v3f P)
 	return(Result);
 }
 
+// TODO(Justin): Clean this function up.
 internal void
 triangle_scan_interpolation(app_back_buffer *AppBackBuffer, triangle *Triangle)
 {
@@ -433,8 +432,8 @@ bitmap_draw(app_back_buffer *AppBackBuffer, loaded_bitmap *Bitmap)
 extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 {
 	app_state *AppState = (app_state *)AppMemory->permanent_storage;
-	//ASSERT(sizeof(AppState) <= 0xFFFFFFFF);
 
+	// TODO(Justin): Assert
 	if (!AppMemory->is_initialized) {
 		v3f CameraPos = {0.0f, 0.0f, 1.0f};
 		v3f CameraDirection = {0.0f, 0.0f, 1.0f};
@@ -459,8 +458,8 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		f32 r = 1.0f;
 		f32 b = -1.0f;
 		f32 t = 1.0f;
-		f32 n = 1.0f;
-		f32 f = 2.0f;
+		f32 n = 0.1f;
+		f32 f = 100.0f;
 
 
 		AppState->MapToCamera = m4x4_camera_map_create(CameraPos, CameraDirection, CameraUp);
@@ -475,31 +474,9 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		AppMemory->is_initialized = true;
 	}
 
-	// Clear screen to black
-	u32 *pixel = (u32 *)AppBackBuffer->memory;
-	for (s32 y = 0; y < AppBackBuffer->height; y++) {
-		for (s32 x = 0; x < AppBackBuffer->width; x++) {
-			*pixel++ = 0;
-		}
-	}
-
 	
 
-
-	//
-	// NOTE(Justin): AppInput/ Do something smarter here...
-	//
-
 	f32 time_delta = AppInput->time_delta;
-
-	//
-	// NOTE(Justin): Need pointers to camrea so camera state persists across
-	// frames.
-	//
-	// TODO(Justin): Instead of getting three pointers here first determine
-	// which camera to show then get a pointer to it.
-	//
-
 
 	camera *Camera;
 	if (AppInput->Buttons[BUTTON_1].is_down && (AppState->CameraIndex != 0)) {
@@ -509,16 +486,13 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		Camera = &AppState->Cameras[1];
 		AppState->CameraIndex = 1;
 	} else if (AppInput->Buttons[BUTTON_3].is_down) {
-		
 		Camera = &AppState->Cameras[2];
 		AppState->CameraIndex = 2;
 	} else {
-		// TODO(Justin): Do we even need to do this?
 		Camera = &AppState->Cameras[AppState->CameraIndex];
 	}
 
-	// TODO(Justin): Figure out a genreal way to move different cameras
-	// correctly.
+	// TODO(Justin): Genreal way of moving cameras.
 	if (AppInput->Buttons[BUTTON_W].is_down) {
 		v3f Shift = {0.0f, 1.0f * time_delta, 0.0f};
 		Camera->Pos += Shift;
@@ -544,19 +518,6 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		Camera->Pos += Shift;
 	}
 
-
-	//
-	// NOTE(Justin): Update camera transform. Only need to do this
-	// whenever a switch happens. Not every frame. TODO(Justin): Fix
-	// this so that we do it only whenver a change happens. Do it
-	// inside the if-else block app_input logic? Or just count the
-	// button presses. That is enough information to determine
-	// whether or not there exists a need to switch cameras. If so
-	// then can check which camera, if not skip 
-	//
-	// // if width height of back buffer changed
-	// //	create new screen space map.
-
 	AppState->MapToCamera = m4x4_camera_map_create(Camera->Pos, Camera->Direction, Camera->Up);
 	m4x4 MapToCamera = AppState->MapToCamera;
 
@@ -572,27 +533,20 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 	v4f Position = {0.0f, 0.0f, -1.0f, 1};
 
 	//
-	// NOTE(Justin): Render triangle
+	// NOTE(Justin): Render
 	//
+
+	u32 *pixel = (u32 *)AppBackBuffer->memory;
+	for (s32 y = 0; y < AppBackBuffer->height; y++) {
+		for (s32 x = 0; x < AppBackBuffer->width; x++) {
+			*pixel++ = 0;
+		}
+	}
 
 	m4x4 RotateY = m4x4_rotation_y_create((time_delta * 2.0f * PI32 / 4.0f));
 	triangle *Triangle = &AppState->Triangle;
 	triangle Fragment;
 	for (u32 i = 0; i < 3; i++) {
-		// NOTE(Justin): We apply any rigid body transformations to
-		// the triangle itself. After applying the transformations
-		// we obtain a copy of the triangle then apply the viewing
-		// transformations and finally the w divide to the
-		// copy. If we apply the viewing transformations and
-		// w divide to the orignal triangle we can no
-		// longer use the data of the triangle unless we undo the
-		// w divide and viewing transformation to convert
-		// the triangle data back to the proper space. So it is easy
-		// to just obtain a copy of the triagnle and apply the
-		// viewing and division operations on the triangle and copy
-		// this data to the frame buffer. This is the reason for
-		// creating the triagnle called Fragment.
-
 		Triangle->Vertices[i] = RotateY * Triangle->Vertices[i];
 
 		Fragment.Vertices[i] = MapToScreenSpace * MapToPersp * MapToCamera * Triangle->Vertices[i];
