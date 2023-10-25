@@ -13,7 +13,7 @@ Use WASD to move up, left, down, and right. To move in and out, use up arrow and
 
 ## Features
 - Hot Reloading
-  -   Edits to the simulation and rendering code can be made, then recompiled, all without needing to kill the main executable (see demo2).
+  -   Edits to the simulation and rendering code can be made, then recompiled, all without needing to kill the main executable (see demo 002.gif).
   -   This does not work in all cases. For exmple, if a change to a struct is made then the app will need to be closed and recompiled.
 
 - Virtual Camera
