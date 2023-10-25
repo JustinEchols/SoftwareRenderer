@@ -371,7 +371,7 @@ v3f_normalize(v3f A)
 //
 
 inline v4f
-v4f_create_from_scalars(f32 x, f32 y, f32 z, f32 w)
+V4F(f32 x, f32 y, f32 z, f32 w)
 {
 	v4f Result;
 
@@ -393,8 +393,6 @@ v4f_create_from_v3f(v3f A, f32 w)
 
 	return(Result);
 }
-
-
 
 inline v4f
 operator +(v4f A, v4f B)
@@ -615,6 +613,12 @@ m4x4_rotation_x_create(f32 angle)
 	return(R);
 }
 
+inline m4x4
+m4x4_world_space_map_create(v3f V)
+{
+	m4x4 R = m4x4_translation_create(V);
+	return(R);
+}
 
 inline m4x4
 m4x4_perspective_projection_create(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f)

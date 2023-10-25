@@ -373,6 +373,7 @@ triangle_scan_interpolation(app_back_buffer *AppBackBuffer, triangle *Triangle)
 		P.y++;
 	}
 }
+
 #pragma pack(push, 1)
 typedef struct 
 {
@@ -429,6 +430,11 @@ bitmap_draw(app_back_buffer *AppBackBuffer, loaded_bitmap *Bitmap)
 	}
 }
 
+internal v3f
+triagnle_centrioid(triangle *Triangle)
+{
+}
+
 extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 {
 	app_state *AppState = (app_state *)AppMemory->permanent_storage;
@@ -467,7 +473,7 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		AppState->MapToScreenSpace = 
 			m4x4_screen_space_map_create(AppBackBuffer->width, AppBackBuffer->height);
 
-
+		AppState->Triangle.Pos = {0.0f, 0.0f, -5.0f, 1.0f};
 		AppState->Triangle.Vertices[0] = {-0.5f, -0.5f, 0.0f, 1.0f};
 		AppState->Triangle.Vertices[1] = {0.5f, 0.0f, 0.0f, 1.0f};
 		AppState->Triangle.Vertices[2] = {0.0f, 0.5f, 0.0f, 1.0f};
@@ -519,14 +525,17 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		Camera->Pos += Shift;
 	}
 
+	m4x4 MapToWorld = m4x4_world_space_map_create(AppState->Triangle.Pos.xyz);
 	AppState->MapToCamera = m4x4_camera_map_create(Camera->Pos, Camera->Direction, Camera->Up);
 	m4x4 MapToCamera = AppState->MapToCamera;
 
 	m4x4 MapToScreenSpace = m4x4_screen_space_map_create(AppBackBuffer->width, AppBackBuffer->height);
 	m4x4 MapToPersp = AppState->MapToPersp;
 
-	m4x4 M = MapToScreenSpace * MapToPersp * MapToCamera;
+	m4x4 M = MapToScreenSpace * MapToPersp * MapToCamera * MapToWorld;
 	v4f Position = {0.0f, 0.0f, -1.0f, 1};
+
+
 
 	//
 	// NOTE(Justin): Render
@@ -545,7 +554,7 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 	for (u32 i = 0; i < 3; i++) {
 		Triangle->Vertices[i] = RotateY * Triangle->Vertices[i];
 
-		Fragment.Vertices[i] = MapToScreenSpace * MapToPersp * MapToCamera * Triangle->Vertices[i];
+		Fragment.Vertices[i] = M * Triangle->Vertices[i];
 		Fragment.Vertices[i] = (1.0f / Fragment.Vertices[i].w) * Fragment.Vertices[i];
 	}
 	triangle_scan_interpolation(AppBackBuffer, &Fragment);
