@@ -458,8 +458,8 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		f32 r = 1.0f;
 		f32 b = -1.0f;
 		f32 t = 1.0f;
-		f32 n = 0.1f;
-		f32 f = 100.0f;
+		f32 n = 1.0f;
+		f32 f = 2.0f;
 
 
 		AppState->MapToCamera = m4x4_camera_map_create(CameraPos, CameraDirection, CameraUp);
@@ -471,6 +471,7 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		AppState->Triangle.Vertices[0] = {-0.5f, -0.5f, 0.0f, 1.0f};
 		AppState->Triangle.Vertices[1] = {0.5f, 0.0f, 0.0f, 1.0f};
 		AppState->Triangle.Vertices[2] = {0.0f, 0.5f, 0.0f, 1.0f};
+
 		AppMemory->is_initialized = true;
 	}
 
@@ -521,11 +522,6 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 	AppState->MapToCamera = m4x4_camera_map_create(Camera->Pos, Camera->Direction, Camera->Up);
 	m4x4 MapToCamera = AppState->MapToCamera;
 
-
-	//  TODO(Justin): Update the Screen Space map whenever the size of the
-	//  window changes. Right now we are creating a Screen Space map each time
-	//  which is uneccesary.
-
 	m4x4 MapToScreenSpace = m4x4_screen_space_map_create(AppBackBuffer->width, AppBackBuffer->height);
 	m4x4 MapToPersp = AppState->MapToPersp;
 
@@ -553,14 +549,4 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		Fragment.Vertices[i] = (1.0f / Fragment.Vertices[i].w) * Fragment.Vertices[i];
 	}
 	triangle_scan_interpolation(AppBackBuffer, &Fragment);
-
-#if 0
-	v4f PositionFrag = M * Position;
-	PositionFrag = (1.0f / PositionFrag.w) * PositionFrag;
-
-	Color = {1.0f, 1.0f, 1.0f};
-	for (u32 i = 0; i < 3; i++) {
-		line_draw_dda(&AppBackBuffer, PositionFrag.xy, Fragment.Vertices[i].xy, Color);
-	}
-#endif
 }
