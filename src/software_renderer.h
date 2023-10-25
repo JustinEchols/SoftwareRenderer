@@ -4,43 +4,43 @@
 #include "software_renderer_math.h"
 #include "software_renderer_intrinsics.h"
 
-typedef struct
+struct rectangle
 {
 	v4f Min;
 	v4f Max;
-} rectangle;
+};
 
-typedef struct
+struct circle
 {
 	v4f Center;
 	f32 radius;
-} circle;
+};
 
 
-typedef struct
+struct triangle
 {
 	v3f Color;
 	v4f Vertices[3];
-} triangle;
+};
 
-typedef struct
+struct square
 {
 	triangle Triangles[2];
-} square;
+};
 
-typedef struct
+struct cube
 {
 	v4f Center;
 	v2f Dim;
-} cube;
+};
 
-typedef struct
+struct edge
 {
 	f32 x;
 	f32 x_step;
 	s32 y_start;
 	s32 y_end;
-} edge;
+};
 
 #define APP_UPDATE_AND_RENDER(name) void name(app_back_buffer *AppBackBuffer, app_input *AppInput, app_memory *AppMemory)
 typedef APP_UPDATE_AND_RENDER(app_update_and_render_func);
@@ -48,22 +48,22 @@ APP_UPDATE_AND_RENDER(app_update_and_render_stub)
 {
 }
 
-typedef struct
+struct camera
 {
 	v3f Pos;
 	v3f Direction;
 	v3f Up;
-} camera;
+};
 
-typedef struct
+struct loaded_bitmap
 {
 	void *memory;
 	s32 width;           
 	s32 height;          
 
-} loaded_bitmap;
+};
 
-typedef struct
+struct app_state
 {
 	camera Cameras[3];
 	u32 CameraIndex;
@@ -75,7 +75,7 @@ typedef struct
 	triangle Triangle;
 
 	loaded_bitmap Bitmap;
-} app_state;
+};
 
 #define SOFTWARE_RENDERER_H
 #endif
