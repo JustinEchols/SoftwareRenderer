@@ -208,9 +208,6 @@ v2f_length_squaredf(v2f A)
 	return(Result);
 }
 
-// NOTE(Justin): When should these functions return a v2f?
-// WHen should these functions modify an arguement and return void?
-
 inline v2f
 v2f_normalizef(v2f A)
 {
@@ -241,8 +238,9 @@ v2f_crossf(v2f A, v2f B)
 // NOTE(Justin): v3f operations
 //
 
+
 inline v3f
-v3f_create_from_scalars(f32 x, f32 y, f32 z)
+V3F(f32 x, f32 y, f32 z)
 {
 	v3f Result;
 
