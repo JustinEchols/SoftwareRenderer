@@ -77,8 +77,6 @@ typedef DEBUG_PLATFORM_FILE_READ_ENTIRE(debug_platform_file_read_entire_func);
 #define DEBUG_PLATFORM_FILE_WRITE_ENTIRE(name) b32 name(char *file_name, u32 size, void *memory)
 typedef DEBUG_PLATFORM_FILE_WRITE_ENTIRE(debug_platform_file_write_entire_func);
 
-
-
 #endif
 
 typedef struct
@@ -93,32 +91,79 @@ typedef struct
 
 enum
 {
-	BUTTON_W,
-	BUTTON_S,
-	BUTTON_A,
-	BUTTON_D,
-	BUTTON_UP,
-	BUTTON_DOWN,
-	BUTTON_LEFT,
-	BUTTON_RIGHT,
-	BUTTON_1,
-	BUTTON_2,
-	BUTTON_3,
+	KEY_BUTTON_W,
+	KEY_BUTTON_S,
+	KEY_BUTTON_A,
+	KEY_BUTTON_D,
+	KEY_BUTTON_UP,
+	KEY_BUTTON_DOWN,
+	KEY_BUTTON_LEFT,
+	KEY_BUTTON_RIGHT,
+	KEY_BUTTON_1,
+	KEY_BUTTON_2,
+	KEY_BUTTON_3,
 
-	BUTTON_COUNT,
+	KEY_BUTTON_COUNT,
 };
+
 
 typedef struct
 {
-	b32 changed;
-	b32 is_down;
+	b32 ended_down;
+	u32 half_transition_count;
 
 } app_button_state;
 
 typedef struct
 {
+	union
+	{
+		app_button_state Buttons[KEY_BUTTON_COUNT];
+		struct
+		{
+			app_button_state W;
+			app_button_state S;
+			app_button_state A;
+			app_button_state D;
+			app_button_state Up;
+			app_button_state Down;
+			app_button_state Left;
+			app_button_state Right;
+			app_button_state One;
+			app_button_state Two;
+			app_button_state Three;
+		};
+	};
+} app_keyboard_controller;
+
+enum
+{
+	MOUSE_RIGHT,
+	MOUSE_LEFT,
+
+	MOUSE_BUTTON_COUNT
+};
+
+typedef struct
+{
+	union
+	{
+		app_button_state Buttons[MOUSE_BUTTON_COUNT];
+		struct
+		{
+			app_button_state Right;
+			app_button_state Left;
+		};
+	};
+	int x, y;
+
+} app_mouse_controller;
+
+typedef struct
+{
 	f32 time_delta;
-	app_button_state Buttons[BUTTON_COUNT];
+	app_keyboard_controller KeyboardController;
+	app_mouse_controller MouseController;
 } app_input;
 
 typedef struct

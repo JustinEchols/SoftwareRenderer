@@ -212,6 +212,94 @@ win32_str_cat(char *str_a, size_t str_a_size,
 	*dest++ = 0;
 }
 
+internal void
+win32_process_pending_messages(app_keyboard_controller *KeyboardController, app_mouse_controller *MouseController)
+{
+
+	MSG Message;
+	while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE)) {
+		switch (Message.message) {
+			case WM_KEYDOWN:
+			case WM_KEYUP: 
+			{
+				u32 vk_code = (u32)Message.wParam;
+				b32 was_down = ((Message.lParam & (1 << 30)) != 0);
+				b32 ended_down = ((Message.lParam & (1 << 31)) == 0);
+
+				if (was_down != ended_down) {
+					switch (vk_code) {
+						case 'W':
+						{
+							KeyboardController->W.ended_down = ended_down;
+							KeyboardController->W.half_transition_count++;
+						} break;
+						case 'S':
+						{
+							KeyboardController->S.ended_down = ended_down;
+							KeyboardController->S.half_transition_count++;
+						} break;
+						case 'A':
+						{
+							KeyboardController->A.ended_down = ended_down;
+							KeyboardController->A.half_transition_count++;
+						} break;
+						case 'D':
+						{
+							KeyboardController->D.ended_down = ended_down;
+							KeyboardController->D.half_transition_count++;
+						} break;
+						case VK_UP:
+						{
+							KeyboardController->Up.ended_down = ended_down;
+							KeyboardController->Up.half_transition_count++;
+						} break;
+						case VK_DOWN:
+						{
+							KeyboardController->Down.ended_down = ended_down;
+							KeyboardController->Down.half_transition_count++;
+						} break;
+						case VK_LEFT:
+						{
+							KeyboardController->Left.ended_down = ended_down;
+							KeyboardController->Left.half_transition_count++;
+						} break;
+						case VK_RIGHT:
+						{
+							KeyboardController->Right.ended_down = ended_down;
+							KeyboardController->Right.half_transition_count++;
+						} break;
+						case 0x31:
+						{
+							KeyboardController->One.ended_down = ended_down;
+							KeyboardController->One.half_transition_count++;
+						} break;
+						case 0x32:
+						{
+							KeyboardController->Two.ended_down = ended_down;
+							KeyboardController->Two.half_transition_count++;
+						} break;
+						case 0x33:
+						{
+							KeyboardController->Three.ended_down = ended_down;
+							KeyboardController->Three.half_transition_count++;
+						} break;
+					}
+				}
+			} break;
+			case WM_MOUSEMOVE:
+			{
+				MouseController->x = (Message.lParam & 0xFFFF);
+				MouseController->y = (Win32BackBuffer.height - ((Message.lParam & (0xFFFF << 16)) >> 16));
+			} break;
+			default:
+			{
+				TranslateMessage(&Message);
+				DispatchMessage(&Message);
+			}
+		}
+	}
+}
+
 int CALLBACK
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
@@ -256,12 +344,16 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 			      str_b, str_b_size, 
 				  dest, dest_size);
 
-	WNDCLASSA WindowClass = {};
+	WNDCLASSEX WindowClass = {};
 
+	WindowClass.cbSize = sizeof(WindowClass);
 	WindowClass.style = (CS_HREDRAW | CS_VREDRAW);
 	WindowClass.lpfnWndProc = win32_main_window_callback;
 	WindowClass.hInstance = hInstance;
+	WindowClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+	WindowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
 	WindowClass.lpszClassName = "Main window";
+
 
 	Win32BackBuffer = {};
 	win32_back_buffer_resize(&Win32BackBuffer, 960, 540);
@@ -270,8 +362,8 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 	f32 ticks_per_second = (f32)tick_frequency.QuadPart;
 	f32 time_for_each_tick = 1.0f / ticks_per_second;
 
-	if (RegisterClassA(&WindowClass)) {
-		HWND Window = CreateWindowExA(
+	if (RegisterClassEx(&WindowClass)) {
+		HWND Window = CreateWindowEx(
 				0,
 				WindowClass.lpszClassName,
 				"Rasterization Test",
@@ -336,90 +428,27 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 					app_keyboard_controller *OldKeyboardController = &OldInput->KeyboardController;
 					app_keyboard_controller *NewKeyboardController = &NewInput->KeyboardController;
 					app_keyboard_controller EmptyKeyboardController = {};
-
 					*NewKeyboardController = EmptyKeyboardController;
-					for (u32 button_index = 0; button_index < BUTTON_COUNT; button_index++) {
+
+					app_mouse_controller *OldMouseController = &OldInput->MouseController;
+					app_mouse_controller *NewMouseController = &NewInput->MouseController;
+					app_mouse_controller EmptyMouseController = {};
+					*NewMouseController = EmptyMouseController;
+					NewMouseController->x = OldMouseController->x;
+					NewMouseController->y = OldMouseController->y;
+
+
+
+					for (u32 button_index = 0; button_index < KEY_BUTTON_COUNT; button_index++) {
 						NewKeyboardController->Buttons[button_index].ended_down = OldKeyboardController->Buttons[button_index].ended_down;
 					}
-
-					MSG Message;
-					while (PeekMessage(&Message, Window, 0, 0, PM_REMOVE)) {
-						switch (Message.message) {
-							case WM_KEYDOWN:
-							case WM_KEYUP: 
-							{
-								u32 vk_code = (u32)Message.wParam;
-								b32 was_down = ((Message.lParam & (1 << 30)) != 0);
-								b32 ended_down = ((Message.lParam & (1 << 31)) == 0);
-
-								if (was_down != ended_down) {
-									switch (vk_code) {
-										case 'W':
-										{
-											NewKeyboardController->W.ended_down = ended_down;
-											NewKeyboardController->W.half_transition_count++;
-										} break;
-										case 'S':
-										{
-
-											NewKeyboardController->S.ended_down = ended_down;
-											NewKeyboardController->S.half_transition_count++;
-										} break;
-										case 'A':
-										{
-											NewKeyboardController->A.ended_down = ended_down;
-											NewKeyboardController->A.half_transition_count++;
-										} break;
-										case 'D':
-										{
-											NewKeyboardController->D.ended_down = ended_down;
-											NewKeyboardController->D.half_transition_count++;
-										} break;
-										case VK_UP:
-										{
-											NewKeyboardController->Up.ended_down = ended_down;
-											NewKeyboardController->Up.half_transition_count++;
-										} break;
-										case VK_DOWN:
-										{
-											NewKeyboardController->Down.ended_down = ended_down;
-											NewKeyboardController->Down.half_transition_count++;
-										} break;
-										case VK_LEFT:
-										{
-											NewKeyboardController->Left.ended_down = ended_down;
-											NewKeyboardController->Left.half_transition_count++;
-										} break;
-										case VK_RIGHT:
-										{
-											NewKeyboardController->Right.ended_down = ended_down;
-											NewKeyboardController->Right.half_transition_count++;
-										} break;
-										case 0x31:
-										{
-											NewKeyboardController->One.ended_down = ended_down;
-											NewKeyboardController->One.half_transition_count++;
-										} break;
-										case 0x32:
-										{
-											NewKeyboardController->Two.ended_down = ended_down;
-											NewKeyboardController->Two.half_transition_count++;
-										} break;
-										case 0x33:
-										{
-											NewKeyboardController->Three.ended_down = ended_down;
-											NewKeyboardController->Three.half_transition_count++;
-										} break;
-									}
-								}
-							} break;
-							default:
-							{
-								TranslateMessage(&Message);
-								DispatchMessage(&Message);
-							}
-						}
+					for (u32 button_index = 0; button_index < MOUSE_BUTTON_COUNT ; button_index++) {
+						NewMouseController->Buttons[button_index].ended_down = OldMouseController->Buttons[button_index].ended_down;
 					}
+
+					win32_process_pending_messages(NewKeyboardController, NewMouseController);
+
+
 
 					app_back_buffer AppBackBuffer = {};
 					AppBackBuffer.memory = Win32BackBuffer.memory;

@@ -557,4 +557,14 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		Fragment.Vertices[i] = (1.0f / Fragment.Vertices[i].w) * Fragment.Vertices[i];
 	}
 	triangle_scan_interpolation(AppBackBuffer, &Fragment);
+
+
+	v2f OffsetInPixels = {20.0f, 20.f};
+	rectangle Rect;
+	v3f Color = {1.0f, 1.0f, 1.0f};
+	Rect.Min.xy = {(f32)AppInput->MouseController.x, (f32)AppInput->MouseController.y};
+	Rect.Max.xy = Rect.Min.xy + OffsetInPixels;
+	rectangle_draw(AppBackBuffer, Rect, Color);
+
+
 }
