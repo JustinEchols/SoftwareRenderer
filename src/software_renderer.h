@@ -19,6 +19,7 @@ struct circle
 
 struct triangle
 {
+	v4f Pos;
 	v3f Color;
 	v4f Vertices[3];
 };

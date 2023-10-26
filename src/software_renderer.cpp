@@ -486,13 +486,13 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 	f32 time_delta = AppInput->time_delta;
 
 	camera *Camera;
-	if (AppInput->Buttons[BUTTON_1].is_down && (AppState->CameraIndex != 0)) {
+	if (AppInput->KeyboardController.One.ended_down && (AppState->CameraIndex != 0)) {
 		Camera = &AppState->Cameras[0];
 		AppState->CameraIndex = 0;
-	} else if (AppInput->Buttons[BUTTON_2].is_down && (AppState->CameraIndex != 1)) {
+	} else if (AppInput->KeyboardController.Two.ended_down && (AppState->CameraIndex != 1)) {
 		Camera = &AppState->Cameras[1];
 		AppState->CameraIndex = 1;
-	} else if (AppInput->Buttons[BUTTON_3].is_down) {
+	} else if (AppInput->KeyboardController.Three.ended_down) {
 		Camera = &AppState->Cameras[2];
 		AppState->CameraIndex = 2;
 	} else {
@@ -500,32 +500,34 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 	}
 
 	// TODO(Justin): Genreal way of moving cameras.
-	if (AppInput->Buttons[BUTTON_W].is_down) {
+	if (AppInput->KeyboardController.W.ended_down) {
 		v3f Shift = {0.0f, 1.0f * time_delta, 0.0f};
 		Camera->Pos += Shift;
 	}
-	if (AppInput->Buttons[BUTTON_S].is_down) {
+	if (AppInput->KeyboardController.S.ended_down) {
 		v3f Shift = {0.0f, -1.0f * time_delta, 0.0f};
 		Camera->Pos += Shift;
 	}
-	if (AppInput->Buttons[BUTTON_A].is_down) {
+	if (AppInput->KeyboardController.A.ended_down) {
 		v3f Shift = {-1.0f * time_delta, 0.0f, 0.0f};
 		Camera->Pos += Shift;
 	}
-	if (AppInput->Buttons[BUTTON_D].is_down) {
+	if (AppInput->KeyboardController.D.ended_down) {
 		v3f Shift = {1.0f * time_delta, 0.0f, 0.0f};
 		Camera->Pos += Shift;
 	}
-	if (AppInput->Buttons[BUTTON_UP].is_down) {
+	if (AppInput->KeyboardController.Up.ended_down) {
 		v3f Shift = {0.0f, 0.0f, -1.0f * time_delta};
 		Camera->Pos += Shift;
 	}
-	if (AppInput->Buttons[BUTTON_DOWN].is_down) {
+	if (AppInput->KeyboardController.Down.ended_down) {
 		v3f Shift = {0.0f, 0.0f, 1.0f * time_delta};
 		Camera->Pos += Shift;
 	}
 
+
 	m4x4 MapToWorld = m4x4_world_space_map_create(AppState->Triangle.Pos.xyz);
+
 	AppState->MapToCamera = m4x4_camera_map_create(Camera->Pos, Camera->Direction, Camera->Up);
 	m4x4 MapToCamera = AppState->MapToCamera;
 
@@ -533,9 +535,6 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 	m4x4 MapToPersp = AppState->MapToPersp;
 
 	m4x4 M = MapToScreenSpace * MapToPersp * MapToCamera * MapToWorld;
-	v4f Position = {0.0f, 0.0f, -1.0f, 1};
-
-
 
 	//
 	// NOTE(Justin): Render

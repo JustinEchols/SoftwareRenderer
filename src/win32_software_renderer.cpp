@@ -7,7 +7,7 @@
 global_variable b32 GLOBAL_RUNNING;
 global_variable win32_back_buffer Win32BackBuffer;
 global_variable LARGE_INTEGER tick_frequency;
-global_variable app_input AppInput;
+//global_variable app_input AppInput;
 
 
 typedef struct
@@ -315,10 +315,13 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 
 				win32_app_code AppCode = win32_app_code_load(full_path_to_dll, full_path_to_dll_tmp);
 
-				GLOBAL_RUNNING = true;
+				app_input AppInput[2] = {};
+				app_input *NewInput = &AppInput[0];
+				app_input *OldInput = &AppInput[1];
 
 				f32 time_delta = 0.0f;
 
+				GLOBAL_RUNNING = true;
 				LARGE_INTEGER tick_count_before;
 				QueryPerformanceCounter(&tick_count_before);
 				while (GLOBAL_RUNNING) {
@@ -329,6 +332,16 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 						AppCode = win32_app_code_load(full_path_to_dll, full_path_to_dll_tmp);
 						AppCode.DLLWriteTime = DLLWriteTime;
 					}
+
+					app_keyboard_controller *OldKeyboardController = &OldInput->KeyboardController;
+					app_keyboard_controller *NewKeyboardController = &NewInput->KeyboardController;
+					app_keyboard_controller EmptyKeyboardController = {};
+
+					*NewKeyboardController = EmptyKeyboardController;
+					for (u32 button_index = 0; button_index < BUTTON_COUNT; button_index++) {
+						NewKeyboardController->Buttons[button_index].ended_down = OldKeyboardController->Buttons[button_index].ended_down;
+					}
+
 					MSG Message;
 					while (PeekMessage(&Message, Window, 0, 0, PM_REMOVE)) {
 						switch (Message.message) {
@@ -337,53 +350,65 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 							{
 								u32 vk_code = (u32)Message.wParam;
 								b32 was_down = ((Message.lParam & (1 << 30)) != 0);
-								b32 is_down = ((Message.lParam & (1 << 31)) == 0);
+								b32 ended_down = ((Message.lParam & (1 << 31)) == 0);
 
-								if (was_down != is_down) {
+								if (was_down != ended_down) {
 									switch (vk_code) {
 										case 'W':
 										{
-											AppInput.Buttons[BUTTON_W].is_down = is_down;
+											NewKeyboardController->W.ended_down = ended_down;
+											NewKeyboardController->W.half_transition_count++;
 										} break;
 										case 'S':
 										{
-											AppInput.Buttons[BUTTON_S].is_down = is_down;
+
+											NewKeyboardController->S.ended_down = ended_down;
+											NewKeyboardController->S.half_transition_count++;
 										} break;
 										case 'A':
 										{
-											AppInput.Buttons[BUTTON_A].is_down = is_down;
+											NewKeyboardController->A.ended_down = ended_down;
+											NewKeyboardController->A.half_transition_count++;
 										} break;
 										case 'D':
 										{
-											AppInput.Buttons[BUTTON_D].is_down = is_down;
+											NewKeyboardController->D.ended_down = ended_down;
+											NewKeyboardController->D.half_transition_count++;
 										} break;
 										case VK_UP:
 										{
-											AppInput.Buttons[BUTTON_UP].is_down = is_down;
+											NewKeyboardController->Up.ended_down = ended_down;
+											NewKeyboardController->Up.half_transition_count++;
 										} break;
 										case VK_DOWN:
 										{
-											AppInput.Buttons[BUTTON_DOWN].is_down = is_down;
+											NewKeyboardController->Down.ended_down = ended_down;
+											NewKeyboardController->Down.half_transition_count++;
 										} break;
 										case VK_LEFT:
 										{
-											AppInput.Buttons[BUTTON_LEFT].is_down = is_down;
+											NewKeyboardController->Left.ended_down = ended_down;
+											NewKeyboardController->Left.half_transition_count++;
 										} break;
 										case VK_RIGHT:
 										{
-											AppInput.Buttons[BUTTON_RIGHT].is_down = is_down;
+											NewKeyboardController->Right.ended_down = ended_down;
+											NewKeyboardController->Right.half_transition_count++;
 										} break;
 										case 0x31:
 										{
-											AppInput.Buttons[BUTTON_1].is_down = is_down;
+											NewKeyboardController->One.ended_down = ended_down;
+											NewKeyboardController->One.half_transition_count++;
 										} break;
 										case 0x32:
 										{
-											AppInput.Buttons[BUTTON_2].is_down = is_down;
+											NewKeyboardController->Two.ended_down = ended_down;
+											NewKeyboardController->Two.half_transition_count++;
 										} break;
 										case 0x33:
 										{
-											AppInput.Buttons[BUTTON_3].is_down = is_down;
+											NewKeyboardController->Three.ended_down = ended_down;
+											NewKeyboardController->Three.half_transition_count++;
 										} break;
 									}
 								}
@@ -403,7 +428,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 					AppBackBuffer.width = Win32BackBuffer.width;
 					AppBackBuffer.height = Win32BackBuffer.height;
 
-					AppCode.app_update_and_render(&AppBackBuffer, &AppInput, &AppMemory);
+					AppCode.app_update_and_render(&AppBackBuffer, NewInput, &AppMemory);
 
 
 					StretchDIBits(DeviceContext,
@@ -421,8 +446,11 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 					time_delta = tick_count_elapsed * time_for_each_tick;
 					tick_count_before = tick_count_after;
 
-					AppInput.time_delta = time_delta;
-					
+					NewInput->time_delta = time_delta;
+					app_input *TempInput = NewInput;
+					NewInput = OldInput;
+					OldInput = TempInput;
+
 				}
 			}
 		}
