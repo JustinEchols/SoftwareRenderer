@@ -24,17 +24,6 @@ struct triangle
 	v4f Vertices[3];
 };
 
-struct square
-{
-	triangle Triangles[2];
-};
-
-struct cube
-{
-	v4f Center;
-	v2f Dim;
-};
-
 struct edge
 {
 	f32 x;
@@ -74,8 +63,6 @@ struct app_state
 	m4x4 MapToScreenSpace;
 
 	triangle Triangle;
-
-	loaded_bitmap Bitmap;
 };
 
 #define SOFTWARE_RENDERER_H

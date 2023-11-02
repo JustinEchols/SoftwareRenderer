@@ -73,22 +73,21 @@ line_draw_dda(app_back_buffer *AppBackBuffer, v2f P1, v2f P2, v3f Color)
 {
 	v2f Diff = P2 - P1;
 
-	int dx = f32_round_to_s32(Diff.x);
-	int dy = f32_round_to_s32(Diff.y);
+	s32 dx = f32_round_to_s32(Diff.x);
+	s32 dy = f32_round_to_s32(Diff.y);
 
-	int steps, k;
+	s32 pixel_count, pixel_index;
 
 	if (ABS(dx) > ABS(dy)) {
-		steps = ABS(dx);
+		pixel_count = ABS(dx);
 	} else {
-		steps = ABS(dy);
+		pixel_count = ABS(dy);
 	}
 
-	v2f Increment = {(f32)dx / (f32)steps, (f32)dy / (f32)steps};
+	v2f Increment = {(f32)dx / (f32)pixel_count, (f32)dy / (f32)pixel_count};
 	v2f PixelPos = P1;
-
 	pixel_set(AppBackBuffer, PixelPos, Color);
-	for (k = 0; k < steps; k++) {
+	for (pixel_index = 0; pixel_index < pixel_count; pixel_index++) {
 		PixelPos += Increment;
 		pixel_set(AppBackBuffer, PixelPos, Color);
 	}
@@ -145,19 +144,31 @@ internal void
 rectangle_draw(app_back_buffer *AppBackBuffer, rectangle R, v3f Color)
 {
 	// TODO(Justin): Bounds checking
-	u32 x_min = f32_round_to_u32(R.Min.x);
-	u32 x_max = f32_round_to_u32(R.Max.x);
+	s32 x_min = f32_round_to_u32(R.Min.x);
+	s32 x_max = f32_round_to_u32(R.Max.x);
 
-	u32 y_min = f32_round_to_u32(R.Min.y);
-	u32 y_max = f32_round_to_u32(R.Max.y);
+	s32 y_min = f32_round_to_u32(R.Min.y);
+	s32 y_max = f32_round_to_u32(R.Max.y);
 
+	if (x_min < 0) {
+		x_min = 0;
+	}
+	if (x_max > AppBackBuffer->width) {
+		x_max = AppBackBuffer->width;
+	}
+	if (y_min < 0) {
+		y_min = 0;
+	}
+	if (y_max > AppBackBuffer->height) {
+		y_max = AppBackBuffer->height;
+	}
 
 	u32 color = color_convert_v3f_to_u32(Color);
 
 	u8 * pixel_row = (u8 *)AppBackBuffer->memory + AppBackBuffer->stride * y_min + AppBackBuffer->bytes_per_pixel * x_min;
-	for (u32 y = y_min; y < y_max; y++) {
+	for (s32 y = y_min; y < y_max; y++) {
 		u32 *pixel = (u32 *)pixel_row;
-		for (u32 x = x_min; x < x_max; x++) {
+		for (s32 x = x_min; x < x_max; x++) {
 			*pixel++ = color;
 		}
 		pixel_row += AppBackBuffer->stride;
@@ -374,64 +385,8 @@ triangle_scan_interpolation(app_back_buffer *AppBackBuffer, triangle *Triangle)
 	}
 }
 
-#pragma pack(push, 1)
-typedef struct 
-{
-	u16 FileType;     /* File type, always 4D42h ("BM") */
-	u32 FileSize;     /* Size of the file in bytes */
-	u16 Reserved1;    /* Always 0 */
-	u16 Reserved2;    /* Always 0 */
-	u32 BitmapOffset; 
-	u32 Size;            
-	s32 Width;           
-	s32 Height;          
-	u16 Planes;          
-	u16 BitsPerPixel;    
-	u32 Compression;     
-	u32 SizeOfBitmap;    
-	s32 HorzResolution;  
-	s32 VertResolution;  
-	u32 ColorsUsed;      
-	u32 ColorsImportant; 
-} bitmap_header;
-#pragma pack(pop)
-
-#if 0
-internal loaded_bitmap 
-debug_file_bitmap_read_entire(char *file_name)
-{
-	loaded_bitmap Result = {};
-	debug_file_read_result File = DEBUG_PLATFORM_FILE_READ_ENTIRE(file_name);
-	if (File.memory) {
-		bitmap_header *BitmapHeader = (bitmap_header *)File.memory;
-		Result.memory = (void *)((u8 *)BitmapHeader + BitmapHeader->BitmapOffset);
-		Result.width = BitmapHeader->Width;
-		Result.height = BitmapHeader->Height;
-	} else {
-	}
-	return(Result);
-}
-#endif
-
 internal void
-bitmap_draw(app_back_buffer *AppBackBuffer, loaded_bitmap *Bitmap)
-{
-	u8 *src_row = (u8 *)Bitmap->memory;
-	u8 *dest_row = (u8 *)AppBackBuffer->memory;
-	for (int y = 0; y < Bitmap->height; y++) {
-		u32 *dest = (u32 *)dest_row;
-		u32 *src = (u32 *)src_row;
-		for (int x = 0; x < Bitmap->width; x++) {
-			*dest++ = *src++;
-		}
-		dest_row += AppBackBuffer->stride;
-		src_row += (Bitmap->width * 4);
-
-	}
-}
-
-internal v3f
-triagnle_centrioid(triangle *Triangle)
+camera_update(camera *Camera, app_mouse_controller *MouseController)
 {
 }
 
@@ -459,7 +414,6 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 
 		AppState->CameraIndex = 0;
 
-
 		f32 l = -1.0f;
 		f32 r = 1.0f;
 		f32 b = -1.0f;
@@ -481,8 +435,6 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		AppMemory->is_initialized = true;
 	}
 
-	
-
 	f32 time_delta = AppInput->time_delta;
 
 	camera *Camera;
@@ -500,31 +452,31 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 	}
 
 	// TODO(Justin): Genreal way of moving cameras.
+	v3f Shift = {};
 	if (AppInput->KeyboardController.W.ended_down) {
-		v3f Shift = {0.0f, 1.0f * time_delta, 0.0f};
+		Shift = {0.0f, 1.0f * time_delta, 0.0f};
 		Camera->Pos += Shift;
 	}
 	if (AppInput->KeyboardController.S.ended_down) {
-		v3f Shift = {0.0f, -1.0f * time_delta, 0.0f};
+		Shift = {0.0f, -1.0f * time_delta, 0.0f};
 		Camera->Pos += Shift;
 	}
 	if (AppInput->KeyboardController.A.ended_down) {
-		v3f Shift = {-1.0f * time_delta, 0.0f, 0.0f};
+		Shift = {-1.0f * time_delta, 0.0f, 0.0f};
 		Camera->Pos += Shift;
 	}
 	if (AppInput->KeyboardController.D.ended_down) {
-		v3f Shift = {1.0f * time_delta, 0.0f, 0.0f};
+		Shift = {1.0f * time_delta, 0.0f, 0.0f};
 		Camera->Pos += Shift;
 	}
 	if (AppInput->KeyboardController.Up.ended_down) {
-		v3f Shift = {0.0f, 0.0f, -1.0f * time_delta};
+		Shift = {0.0f, 0.0f, -1.0f * time_delta};
 		Camera->Pos += Shift;
 	}
 	if (AppInput->KeyboardController.Down.ended_down) {
-		v3f Shift = {0.0f, 0.0f, 1.0f * time_delta};
+		Shift = {0.0f, 0.0f, 1.0f * time_delta};
 		Camera->Pos += Shift;
 	}
-
 
 	m4x4 MapToWorld = m4x4_world_space_map_create(AppState->Triangle.Pos.xyz);
 
@@ -557,14 +509,5 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		Fragment.Vertices[i] = (1.0f / Fragment.Vertices[i].w) * Fragment.Vertices[i];
 	}
 	triangle_scan_interpolation(AppBackBuffer, &Fragment);
-
-
-	v2f OffsetInPixels = {20.0f, 20.f};
-	rectangle Rect;
-	v3f Color = {1.0f, 1.0f, 1.0f};
-	Rect.Min.xy = {(f32)AppInput->MouseController.x, (f32)AppInput->MouseController.y};
-	Rect.Max.xy = Rect.Min.xy + OffsetInPixels;
-	rectangle_draw(AppBackBuffer, Rect, Color);
-
 
 }
