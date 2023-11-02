@@ -288,6 +288,8 @@ win32_process_pending_messages(app_keyboard_controller *KeyboardController, app_
 			} break;
 			case WM_MOUSEMOVE:
 			{
+				// NOTE(Justin): This cursor position extraction only works for
+				// application that use one monitor
 				MouseController->x = (Message.lParam & 0xFFFF);
 				MouseController->y = (Win32BackBuffer.height - ((Message.lParam & (0xFFFF << 16)) >> 16));
 			} break;
@@ -366,7 +368,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 		HWND Window = CreateWindowEx(
 				0,
 				WindowClass.lpszClassName,
-				"Rasterization Test",
+				"Software Renderer",
 				(WS_OVERLAPPEDWINDOW | WS_VISIBLE),
 				CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 				0,
@@ -417,7 +419,6 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 				LARGE_INTEGER tick_count_before;
 				QueryPerformanceCounter(&tick_count_before);
 				while (GLOBAL_RUNNING) {
-					//FILETIME DLLWriteTime = win32_file_last_write_time(file_name_dll);
 					FILETIME DLLWriteTime = win32_file_last_write_time(full_path_to_dll);
 					if (CompareFileTime(&DLLWriteTime, &AppCode.DLLWriteTime)) {
 						win32_app_code_unload(&AppCode);
@@ -437,8 +438,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 					NewMouseController->x = OldMouseController->x;
 					NewMouseController->y = OldMouseController->y;
 
-
-
+					// TODO(Justin): Collapse into a single loop?
 					for (u32 button_index = 0; button_index < KEY_BUTTON_COUNT; button_index++) {
 						NewKeyboardController->Buttons[button_index].ended_down = OldKeyboardController->Buttons[button_index].ended_down;
 					}
@@ -448,8 +448,6 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 
 					win32_process_pending_messages(NewKeyboardController, NewMouseController);
 
-
-
 					app_back_buffer AppBackBuffer = {};
 					AppBackBuffer.memory = Win32BackBuffer.memory;
 					AppBackBuffer.bytes_per_pixel = Win32BackBuffer.bytes_per_pixel;
@@ -458,7 +456,6 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 					AppBackBuffer.height = Win32BackBuffer.height;
 
 					AppCode.app_update_and_render(&AppBackBuffer, NewInput, &AppMemory);
-
 
 					StretchDIBits(DeviceContext,
 							0, 0, Win32BackBuffer.width, Win32BackBuffer.height,
