@@ -20,3 +20,10 @@ Use WASD to move up, left, down, and right. To move in and out, use up arrow and
 - Barycentric Coordinates
 - Color Interpolation
     
+## Resources
+
+https://www.amazon.com/3D-Computer-Graphics-Mathematical-Introduction/dp/0521821037
+
+https://my.eng.utah.edu/~cs5600/slides/
+
+https://www.songho.ca/opengl/index.html
