@@ -1,4 +1,4 @@
-# software_renderer
+# SoftwarRenderer
 Experiments in software rendering techniques
 
 ## Compiling
