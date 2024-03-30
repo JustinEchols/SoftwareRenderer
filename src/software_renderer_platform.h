@@ -1,3 +1,9 @@
+
+//
+// NOTE(Justin): Services that the application provides to the windows platform
+// layer
+//
+
 #if !defined(SFOTWARE_RENDERER_PLATFORM_H)
 
 #include <stdlib.h>
@@ -20,6 +26,8 @@ typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
+typedef size_t memory_index;
+
 typedef float f32;
 typedef double f64;
 
@@ -41,6 +49,7 @@ typedef double f64;
 
 #define PI32 3.141592653589f
 #define RAD32 (PI32 / 180.0f)
+#define DegreeToRad(Theta) ((Theta) * RAD32)
 
 #if APP_SLOW
 #define ASSERT(expression) if (!(expression)){*(int *)0 = 0;}
@@ -48,52 +57,45 @@ typedef double f64;
 #define ASSERT(expression)
 #endif
 
-inline u32
-u64_truncate_to_u32(u64 x)
+typedef struct
 {
-	ASSERT(x <= 0xFFFFFFFF)
-	u32 Result = (u32)x;
-	return(Result);
-}
-//
-// NOTE(Justin): Services that the application provides to the windows platform
-// layer
-//
+	int PlaceHolder;
+} thread_context;
 
 #if APP_INTERNAL
 typedef struct 
 {
-	u32 size;
-	void *memory;
+	u32 Size;
+	void *Memory;
 } debug_file_read_result;
 
 
-#define DEBUG_PLATFORM_FILE_FREE(name) void name(void *memory)
+#define DEBUG_PLATFORM_FILE_FREE(name) void name(thread_context *Thread, void *Memory)
 typedef DEBUG_PLATFORM_FILE_FREE(debug_platform_file_free_func);
 
-#define DEBUG_PLATFORM_FILE_READ_ENTIRE(name) debug_file_read_result name(char * file_name)
+#define DEBUG_PLATFORM_FILE_READ_ENTIRE(name) debug_file_read_result name(thread_context *Thread, char *FileName)
 typedef DEBUG_PLATFORM_FILE_READ_ENTIRE(debug_platform_file_read_entire_func);
 
-#define DEBUG_PLATFORM_FILE_WRITE_ENTIRE(name) b32 name(char *file_name, u32 size, void *memory)
+#define DEBUG_PLATFORM_FILE_WRITE_ENTIRE(name) b32 name(thread_context *Thread, char *FileName, u32 Size, void *Memory)
 typedef DEBUG_PLATFORM_FILE_WRITE_ENTIRE(debug_platform_file_write_entire_func);
 
 #endif
 
 typedef struct
 {
-	void *memory;
-	int bytes_per_pixel;
-	int stride;
-	int width;
-	int height;
+	void *Memory;
+	int BytesPerPixel;
+	int Stride;
+	int Width;
+	int Height;
 
 } app_back_buffer;
 
 enum
 {
 	KEY_BUTTON_W,
-	KEY_BUTTON_S,
 	KEY_BUTTON_A,
+	KEY_BUTTON_S,
 	KEY_BUTTON_D,
 	KEY_BUTTON_UP,
 	KEY_BUTTON_DOWN,
@@ -109,8 +111,8 @@ enum
 
 typedef struct
 {
-	b32 ended_down;
-	u32 half_transition_count;
+	b32 EndedDown;
+	u32 HalfTransitionCount;
 
 } app_button_state;
 
@@ -122,8 +124,8 @@ typedef struct
 		struct
 		{
 			app_button_state W;
-			app_button_state S;
 			app_button_state A;
+			app_button_state S;
 			app_button_state D;
 			app_button_state Up;
 			app_button_state Down;
@@ -136,43 +138,23 @@ typedef struct
 	};
 } app_keyboard_controller;
 
-enum
-{
-	MOUSE_RIGHT,
-	MOUSE_LEFT,
-
-	MOUSE_BUTTON_COUNT
-};
-
 typedef struct
 {
-	union
-	{
-		app_button_state Buttons[MOUSE_BUTTON_COUNT];
-		struct
-		{
-			app_button_state Right;
-			app_button_state Left;
-		};
-	};
-	int x, y;
+	app_button_state MouseButtons[5];
+	s32 MouseX, MouseY, MouseZ;
+	f32 dMouseX, dMouseY;
 
-} app_mouse_controller;
-
-typedef struct
-{
-	f32 time_delta;
+	f32 dtForFrame;
 	app_keyboard_controller KeyboardController;
-	app_mouse_controller MouseController;
 } app_input;
 
 typedef struct
 {
-	b32 is_initialized;
-	void *permanent_storage;
-	void *transient_storage;
-	u64 permanent_storage_size;
-	u64 transient_storage_size;
+	b32 IsInitialized;
+	void *PermanentStorage;
+	void *TransientStorage;
+	u64 PermanentStorageSize;
+	u64 TransientStorageSize;
 
 	debug_platform_file_read_entire_func	*debug_platform_file_read_entire;
 	debug_platform_file_write_entire_func	*debug_platform_file_write_entire;
@@ -180,7 +162,11 @@ typedef struct
 
 } app_memory;
 
-
+#define APP_UPDATE_AND_RENDER(name) void name(thread_context *Thread, app_back_buffer *AppBackBuffer, app_input *AppInput, app_memory *AppMemory)
+typedef APP_UPDATE_AND_RENDER(app_update_and_render_func);
+APP_UPDATE_AND_RENDER(app_update_and_render_stub)
+{
+}
 
 #define SFOTWARE_RENDERER_PLATFORM_H
 #endif
