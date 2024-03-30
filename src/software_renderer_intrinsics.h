@@ -1,38 +1,48 @@
 #if !defined(SOFTWARE_RENDERER_INTRINSICS_H)
 
-internal s32
-f32_round_to_s32(f32 x)
+inline u32
+U64TruncateToU32(u64 X)
 {
-	s32 result = (s32)(x + 0.5f);
-	return(result);
+	ASSERT(X <= 0xFFFFFFFF)
+	u32 Result = (u32)X;
+
+	return(Result);
 }
 
 internal s32
-f32_truncate_to_s32(f32 x)
+F32RoundToS32(f32 X)
 {
-	s32 result = (s32)x;
-	return(result);
+	s32 Result = (s32)(X + 0.5f);
+
+	return(Result);
+}
+
+internal s32
+F32TruncateToS32(f32 X)
+{
+	s32 Result = (s32)X;
+	return(Result);
 }
 
 internal u32
-f32_round_to_u32(f32 x)
+F32RoundToU32(f32 X)
 {
-	u32 result = (u32)(x + 0.5f);
-	return(result);
+	u32 Result = (u32)(X + 0.5f);
+	return(Result);
 }
 
 internal u32
-f32_truncate_to_u32(f32 x)
+F32TruncateToU32(f32 X)
 {
-	u32 result = (u32)x;
-	return(result);
+	u32 Result = (u32)X;
+	return(Result);
 }
 
 inline f32
-sqauare_rootf(f32 x)
+Sqrt(f32 X)
 {
-	f32 result = sqrtf(x);
-	return(result);
+	f32 Result = sqrtf(X);
+	return(Result);
 }
 
 #define SOFTWARE_RENDERER_INTRINSICS_H
