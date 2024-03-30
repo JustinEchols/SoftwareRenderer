@@ -123,15 +123,84 @@ struct m2x2
 	f32 e[2][2];
 };
 
-struct m4x4
+struct mat4
 {
 	// NOTE(Justin): Stored in ROW MAJOR order i.e. e[ROW][COL]
 	f32 e[4][4];
 };
 
 //
-// NOTE(Justin): v2f operations
+// NOTE(Justin): Scalar operations
 //
+
+inline f32
+Clamp(f32 A, f32 t, f32 B)
+{
+	f32 Result = t;
+
+	if(Result < A)
+	{
+		Result = A;
+	}
+
+	if(Result > B)
+	{
+		Result = B;
+	}
+
+	return(Result);
+}
+
+inline f32
+Clamp01(f32 X)
+{
+	f32 Result = Clamp(0.0f, X, 1.0f);
+
+	return(Result);
+}
+
+//
+// NOTE(Justin): v2 operations
+//
+
+inline v2i
+V2I(s32 X, s32 Y)
+{
+	v2i Result;
+	Result.x = X;
+	Result.y = Y;
+	return(Result);
+}
+
+inline v2i
+operator +(v2i U, v2i V)
+{
+	v2i Result = {};
+	Result.x = U.x + V.x;
+	Result.y = U.y + V.y;
+
+	return(Result);
+}
+
+inline v2i
+operator *(f32 c, v2i V)
+{
+	v2i Result;
+	Result.x = (s32)(c * (f32)V.x);
+	Result.y = (s32)(c * (f32)V.y);
+
+	return(Result);
+}
+
+inline v2f
+V2F(f32 X, f32 Y)
+{
+	v2f Result;
+	Result.x = X;
+	Result.y = Y;
+
+	return(Result);
+}
 
 inline v2f
 operator *(f32 c, v2f A)
@@ -139,6 +208,7 @@ operator *(f32 c, v2f A)
 	v2f Result;
 	Result.x = c * A.x;
 	Result.y = c * A.y;
+
 	return(Result);
 }
 
@@ -155,13 +225,6 @@ operator *=(v2f &A, f32 c)
 {
 	A = c * A;
 	return(A);
-}
-
-inline v2f
-operator ~(v2f A)
-{
-	v2f Result = -1.0f * A;
-	return(Result);
 }
 
 inline v2f
@@ -194,7 +257,7 @@ operator -(v2f A, v2f B)
 }
 
 inline f32
-v2f_innerf(v2f A, v2f B)
+Dot(v2f A, v2f B)
 {
 	f32 Result = A.x * B.x + A.y * B.y;
 	return(Result);
@@ -202,24 +265,24 @@ v2f_innerf(v2f A, v2f B)
 }
 
 inline f32
-v2f_length_squaredf(v2f A)
+LengthSq(v2f A)
 {
-	f32 Result = v2f_innerf(A, A);
+	f32 Result = Dot(A, A);
 	return(Result);
 }
 
 inline v2f
-v2f_normalizef(v2f A)
+Normalize(v2f A)
 {
 	v2f Result = A;
 
-	f32 c = 1.0f / sqrt(v2f_innerf(A, A));
+	f32 c = 1.0f / sqrt(Dot(A, A));
 	Result *= c;
 
 	return(Result);
 }
 inline v2f
-v2f_crossf(v2f A, v2f B)
+Cross(v2f A, v2f B)
 {
 	v2f Result;
 
@@ -228,8 +291,18 @@ v2f_crossf(v2f A, v2f B)
 
 	return(Result);
 
-	f32 c = 1.0f / sqrt(v2f_innerf(A, A));
+	f32 c = 1.0f / sqrt(Dot(A, A));
 	Result *= c;
+
+	return(Result);
+}
+
+inline f32
+Det(v2f A, v2f B)
+{
+	f32 Result = 0.0f;
+
+	Result = A.x * B.y - A.y * B.x;
 
 	return(Result);
 }
@@ -240,31 +313,43 @@ v2f_crossf(v2f A, v2f B)
 
 
 inline v3f
-V3F(f32 x, f32 y, f32 z)
+V3F(f32 X, f32 Y, f32 Z)
 {
 	v3f Result;
 
-	Result.x = x;
-	Result.y = y;
-	Result.z = z;
+	Result.x = X;
+	Result.y = Y;
+	Result.z = Z;
 
 	return(Result);
 }
 
 inline v3f
-v3f_create_from_v2f(v2f A, f32 z)
+V3F(f32 C)
+{
+	v3f Result;
+
+	Result.x = C;
+	Result.y = C;
+	Result.z = C;
+
+	return(Result);
+}
+
+inline v3f
+V3fCreateFromV2f(v2f A, f32 Z)
 
 {
 	v3f Result;
 
 	Result.xy = A;
-	Result.z = z;
+	Result.z = Z;
 
 	return(Result);
 }
 
 inline f32
-v3f_innerf(v3f A, v3f B)
+Dot(v3f A, v3f B)
 {
 	f32 Result = 0.0f;
 
@@ -274,17 +359,15 @@ v3f_innerf(v3f A, v3f B)
 }
 
 inline f32
-v3f_length_squared(v3f A)
+LengthSq(v3f A)
 {
-	f32 Result = v3f_innerf(A, A);
+	f32 Result = Dot(A, A);
 
 	return(Result);
 }
 
-
-
 inline v3f
-v3f_cross(v3f A, v3f B)
+Cross(v3f A, v3f B)
 {
 	v3f Result;
 
@@ -352,11 +435,11 @@ operator -(v3f A, v3f B)
 }
 
 inline v3f
-v3f_normalize(v3f A)
+Normalize(v3f A)
 {
 	v3f Result = A;
 
-	f32 c = sqrt(v3f_innerf(A, A));
+	f32 c = sqrt(Dot(A, A));
 	ASSERT(c != 0);
 	c = 1.0f / c;
 
@@ -365,31 +448,51 @@ v3f_normalize(v3f A)
 	return(Result);
 }
 
+inline v3f
+XAxis()
+{
+	v3f Result = {1.0f, 0.0f, 0.0f};
+	return(Result);
+}
+
+inline v3f
+YAxis()
+{
+	v3f Result = {0.0f, 1.0f, 0.0f};
+	return(Result);
+}
+
+inline v3f
+ZAxis()
+{
+	v3f Result = {0.0f, 0.0f, 1.0f};
+	return(Result);
+}
 
 //
 // NOTE(Justin): v4f operations
 //
 
 inline v4f
-V4F(f32 x, f32 y, f32 z, f32 w)
+V4F(f32 X, f32 Y, f32 Z, f32 W)
 {
 	v4f Result;
 
-	Result.x = x;
-	Result.y = y;
-	Result.z = z;
-	Result.w = w;
+	Result.x = X;
+	Result.y = Y;
+	Result.z = Z;
+	Result.w = W;
 
 	return(Result);
 }
 
 inline v4f
-v4f_create_from_v3f(v3f A, f32 w)
+v4f_create_from_v3f(v3f A, f32 W)
 {
 	v4f Result;
 
 	Result.xyz = A;
-	Result.w = w;
+	Result.w = W;
 
 	return(Result);
 }
@@ -398,15 +501,32 @@ inline v4f
 operator +(v4f A, v4f B)
 {
 	v4f Result;
-	Result.xyz = A.xyz + B.xyz;
+
+	Result.x = A.x + B.x;
+	Result.y = A.y + B.y;
+	Result.z = A.z + B.z;
+	Result.w = A.w + B.w;
+
 	return(Result);
+}
+
+inline v4f &
+operator +=(v4f &A, v4f B)
+{
+	A = A + B;
+	return(A);
 }
 
 inline v4f
 operator -(v4f A, v4f B)
 {
 	v4f Result;
-	Result.xyz = A.xyz - B.xyz;
+
+	Result.x = A.x - B.x;
+	Result.y = A.y - B.y;
+	Result.z = A.z - B.z;
+	Result.w = A.w - B.w;
+
 	return(Result);
 }
 
@@ -414,7 +534,12 @@ inline v4f
 operator *(f32 c, v4f A)
 {
 	v4f Result;
-	Result.xyz = c * A.xyz;
+
+	Result.x = c * A.x;
+	Result.y = c * A.y;
+	Result.z = c * A.z;
+	Result.w = c * A.w;
+
 	return(Result);
 }
 
@@ -483,14 +608,14 @@ m2x2_adjoint_create(m2x2 A)
 }
 
 //
-// NOTE(Justin): m4x4 operations
+// NOTE(Justin): mat4 operations
 //
 
-internal m4x4
-operator *(m4x4 A, m4x4 B)
+internal mat4
+operator *(mat4 A, mat4 B)
 {
 	// NOTE(Justin): Instructional, NOT optimized.
-	m4x4 R = {};
+	mat4 R = {};
 
 	// For each row of A
 	for (int r = 0; r <= 3; r++) {
@@ -508,7 +633,7 @@ operator *(m4x4 A, m4x4 B)
 }
 
 internal v4f
-transform(m4x4 A, v4f V)
+Mat4Transform(mat4 A, v4f V)
 {
 	v4f R;
 
@@ -521,24 +646,40 @@ transform(m4x4 A, v4f V)
 	return(R);
 }
 
-inline v3f
-operator *(m4x4 A, v3f V)
+inline mat4
+Mat4(v3f E1, v3f E2, v3f E3)
 {
-	v3f R = transform(A, v4f_create_from_v3f(V, 1.0f)).xyz;
+	mat4 R;
+
+	R =
+	{
+		{{E1.x, E2.x, E3.x, 0.0f},
+		{E1.y, E2.y, E3.y, 0.0f},
+		{E1.z, E2.z, E3.z, 0.0f},
+		{0.0f, 0.0f, 0.0f, 1.0f}}
+	};
+
+	return(R);
+}
+
+inline v3f
+operator *(mat4 A, v3f V)
+{
+	v3f R = Mat4Transform(A, v4f_create_from_v3f(V, 1.0f)).xyz;
 	return(R);
 }
 
 inline v4f
-operator *(m4x4 A, v4f V)
+operator *(mat4 A, v4f V)
 {
-	v4f R = transform(A, V);
+	v4f R = Mat4Transform(A, V);
 	return(R);
 }
 
-inline m4x4
-m4x4_identity_create(void)
+inline mat4
+Mat4Identity(void)
 {
-	m4x4 R =
+	mat4 R =
 	{
 		{{1, 0, 0, 0},
 		{0, 1, 0, 0},
@@ -548,10 +689,10 @@ m4x4_identity_create(void)
 	return(R);
 }
 
-inline m4x4
-m4x4_translation_create(v3f V)
+inline mat4
+Mat4Translation(v3f V)
 {
-	m4x4 R =
+	mat4 R =
 	{
 		{{1, 0, 0, V.x},
 		{0, 1, 0, V.y},
@@ -561,10 +702,10 @@ m4x4_translation_create(v3f V)
 	return(R);
 }
 
-inline m4x4
-m4x4_scale_create(v3f V)
+inline mat4
+Mat4Scale(v3f V)
 {
-	m4x4 R =
+	mat4 R =
 	{
 		{{V.x, 0, 0, 0},
 		{0, V.y, 0, 0},
@@ -574,10 +715,23 @@ m4x4_scale_create(v3f V)
 	return(R);
 }
 
-inline m4x4
-m4x4_rotation_y_create(f32 angle)
+inline mat4
+Mat4XRotation(f32 angle)
 {
-	m4x4 R =
+	mat4 R =
+	{
+		{{1, 0, 0, 0},
+		{0, cos(angle), -1.0f * sin(angle), 0},
+		{0, sin(angle), cos(angle), 0},
+		{0, 0, 0, 1}},
+	};
+	return(R);
+}
+
+inline mat4
+Mat4YRotation(f32 angle)
+{
+	mat4 R =
 	{
 		{{cos(angle), 0 , sin(angle), 0},
 		{0, 1, 0, 0},
@@ -587,10 +741,10 @@ m4x4_rotation_y_create(f32 angle)
 	return(R);
 }
 
-inline m4x4
-m4x4_rotation_z_create(f32 angle)
+inline mat4
+Mat4ZRotation(f32 angle)
 {
-	m4x4 R =
+	mat4 R =
 	{
 		{{cos(angle), -1.0f * sin(angle), 0, 0},
 		{sin(angle), cos(angle), 0, 0},
@@ -600,33 +754,41 @@ m4x4_rotation_z_create(f32 angle)
 	return(R);
 }
 
-inline m4x4
-m4x4_rotation_x_create(f32 angle)
+inline mat4
+Mat4TransposeMat3(mat4 M)
 {
-	m4x4 R =
+	mat4 R = M;
+
+	for(u32 j = 0; j < 3; ++j)
 	{
-		{{1, 0, 0, 0},
-		{0, cos(angle), sin(angle), 0},
-		{0, -1.0f * sin(angle), cos(angle), 0},
-		{0, 0, 0, 1}},
-	};
+		for(u32 i = 0; i < 3; ++i)
+		{
+			if((i != j) && (i < j))
+			{
+				f32 Temp = R.e[j][i];
+				R.e[j][i] = R.e[i][j];
+				R.e[i][j] = Temp;
+			}
+		}
+	}
+
 	return(R);
 }
 
-inline m4x4
-m4x4_world_space_map_create(v3f V)
+inline mat4
+Mat4WorldSpaceMap(v3f V)
 {
-	m4x4 R = m4x4_translation_create(V);
+	mat4 R = Mat4Translation(V);
 	return(R);
 }
 
-inline m4x4
-m4x4_perspective_projection_create(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f)
+inline mat4
+Mat4PerspectiveProjection(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f)
 {
 	f32 d = ((f + n) / (f - n));
 	f32 e = (2.0f * f * n) / (f - n);
 
-	m4x4 R =
+	mat4 R =
 	{
 		{{2.0f * n / (r - l), 0, (r + l) / (r - l), 0},
 		{0, 2.0f * n / (t - b), (t + b) / (t - b), 0},
@@ -636,91 +798,70 @@ m4x4_perspective_projection_create(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f)
 	return(R);
 }
 
-#if 0
-inline m4x4 
-m4x4_rectangle_transformation(rectangle R1, rectangle R2)
+inline mat4
+Mat4PerspectiveGL(f32 FOV, f32 AspectRatio, f32 ZNear, f32 ZFar)
 {
-	m4x4 R;
+	mat4 R = {};
 
-	v3f Shift = {-1.0f * R1.Min.x, -1.0f * R1.Min.y, 1.0f};
+	f32 HFOV = FOV / 2.0f;
 
-	f32 Scale_x = ((R2.Max.x - R2.Min.x) / (R1.Max.x - R1.Min.x));
-	f32 Scale_y = ((R2.Max.y - R2.Min.y) / (R1.Max.y - R1.Min.y));
-	v3f Scale = {Scale_x, Scale_y, 1.0f};
-
-	m4x4 MTranslateToOrigin = m4x4_translation_create(Shift);
-	m4x4 MScale = m4x4_scale_create(Scale);
-
-
-	Shift = {R2.Min.x, R2.Min.y, 1.0f};
-
-	m4x4 MTranslateToPosition = m4x4_translation_create(Shift);
-
-	R = MTranslateToPosition * MScale * MTranslateToOrigin;
-
-	return(R);
-}
-#endif
-
-internal m4x4
-m4x4_camera_map_create(v3f CameraPos, v3f CameraDirection, v3f CameraUp)
-{
-	m4x4 R;
-
-	// The viewing transformations and definitions produce a -1 so that the
-	// vector 0 0 1 is looking down the z axis
-	// v3f W = -1.0f * v3f_normalize(CameraDirection);
-
-	v3f W = v3f_normalize(CameraDirection);
-	v3f U = v3f_cross(CameraUp, W);
-
-	U = v3f_normalize(U);
-
-	v3f V = v3f_cross(W, U);
-
-	// Translate to CameraPos
-	m4x4 MapToNewOrigin =
-	{
-		{{1, 0, 0, -CameraPos.x},
-		{0, 1, 0, -CameraPos.y},
-		{0, 0, 1, -CameraPos.z},
-		{0, 0, 0, 1}},
-	};
-
-	// Transforms vector st it is expressed as a LC of U, V, and W.
-	m4x4 M =
-	{
-		{{U.x, V.x, W.x, 0},
-		{U.y, V.y, W.y, 0},
-		{U.z, V.z, W.z, 0},
-		{0, 0, 0, 1}},
-	};
-
-	R = M * MapToNewOrigin;
+	R.e[0][0] = 1.0f / (tanf(HFOV) * AspectRatio);
+    R.e[1][1] = 1.0f / tanf(HFOV);
+    R.e[2][3] = 1.0f;
+    R.e[2][2] = (ZFar + ZNear) / (ZFar - ZNear);
+    R.e[3][2] = -(2.0f *ZFar*ZNear) / (ZFar - ZNear);
 
 	return(R);
 }
 
-internal m4x4
-m4x4_screen_space_map_create(int width, int height)
+internal mat4
+Mat4CameraMap(v3f P, v3f Target)
 {
-	f32 nx = (f32)width;
-	f32 ny = (f32)height;
+	mat4 R;
 
-	m4x4 R
+	// NOTE(Justin): The 3 vectors constructed from P and Target are basis vectors that
+	// are column vectors of the rotation matrix. The Mat4 function puts the
+	// vectors in a mat4 as COLUMN vectors. I.e.
+	//
+	//	Mat4(X, Y, Z) = |X Y Z 0|
+	//					|0 0 0 1|
+	//
+	// After constructing this matrix the final rotation is the inverse of this
+	// matrix which is equivalent to its transpose.
+
+	v3f CameraDirection = Normalize(P - Target);
+	v3f CameraRight = Normalize(Cross(YAxis(), CameraDirection));
+	v3f CameraUp = Normalize(Cross(CameraDirection, CameraRight));
+
+	mat4 Rotate = Mat4TransposeMat3(Mat4(CameraRight, CameraUp, CameraDirection));
+	//mat4 Rotate = Mat4(CameraRight, CameraUp, CameraDirection);
+
+	mat4 Translate = Mat4Translation(-1.0f * P);
+
+	R = Rotate * Translate;
+
+	return(R);
+}
+
+// NOTE(Justin): Should the screen space map include the perspective divide
+internal mat4
+Mat4ScreenSpaceMap(int Width, int Height)
+{
+	mat4 R
 	{
-		{{nx / 2.0f, 0, 0, (nx - 1) / 2.0f},
-		{0, ny / 2.0f, 0, (ny - 1) / 2.0f},
+		{{Width / 2.0f, 0, 0, (Width - 1) / 2.0f},
+		{0, Height / 2.0f, 0, (Height - 1) / 2.0f},
 		{0, 0, 1, 0},
 		{0, 0, 0, 1}},
 	};
+
 	return(R);
 }
 
-internal m4x4
-m4x4_orthographic_projection_create(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f)
+internal mat4
+Mat4OrthographicProjection(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f)
 {
-	m4x4 R =
+	mat4 R =
 	{
 		{{(2.0f / (r - l)), 0, 0, (-1.0f * (r + l) / (r - l))},
 		{0, (2.0f / (t - b)), 0, (-1.0f * (t + b) / (t - b))},
@@ -730,18 +871,5 @@ m4x4_orthographic_projection_create(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f)
 	return(R);
 }
 
-
-internal m4x4
-m4x4_translation_to_origin_create(v3f V)
-{
-	m4x4 R =
-	{
-		{{1, 0, 0, -V.x},
-		{0, 1, 0, -V.y},
-		{0, 0, 1, -V.z},
-		{0, 0, 0, 1}},
-	};
-	return(R);
-}
 #define SOFTWARE_RENDERER_MATH_H
 #endif
