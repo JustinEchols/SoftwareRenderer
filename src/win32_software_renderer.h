@@ -1,21 +1,14 @@
 #if !defined(WIN32_SOFTWARE_RENDERER_H)
 
-typedef struct
+struct win32_back_buffer
 {
 	BITMAPINFO Info;
-	void *memory;
-	int bytes_per_pixel;
-	int stride;
-	int width;
-	int height;
-
-} win32_back_buffer;
-
-typedef struct
-{
-	void *memory;
-	int height;
-} scan_buffer;
+	void *Memory;
+	int BytesPerPixel;
+	int Stride;
+	int Width;
+	int Height;
+};
 
 #define WIN32_SOFTWARE_RENDERER_H
 #endif
