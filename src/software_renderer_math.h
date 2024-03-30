@@ -703,13 +703,13 @@ Mat4Translation(v3f V)
 }
 
 inline mat4
-Mat4Scale(v3f V)
+Mat4Scale(f32 C)
 {
 	mat4 R =
 	{
-		{{V.x, 0, 0, 0},
-		{0, V.y, 0, 0},
-		{0, 0, V.z, 0},
+		{{C, 0, 0, 0},
+		{0, C, 0, 0},
+		{0, 0, C, 0},
 		{0, 0, 0, 1}},
 	};
 	return(R);
