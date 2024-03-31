@@ -1,4 +1,5 @@
 #if !defined(SOFTWARE_RENDERER_INTRINSICS_H)
+#include <math.h>
 
 inline u32
 U64TruncateToU32(u64 X)
@@ -56,6 +57,13 @@ inline f32
 Cos(f32 Angle)
 {
 	f32 Result = cosf(Angle);
+	return(Result);
+}
+
+inline f32
+Tan(f32 Angle)
+{
+	f32 Result = tanf(Angle);
 	return(Result);
 }
 

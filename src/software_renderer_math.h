@@ -1,5 +1,5 @@
 #if !defined(SOFTWARE_RENDERER_MATH_H)
-#include <math.h>
+
 
 #define SQUARE(x) ((x) * (x))
 #define CUBE(x) ((x) * (x) * (x))
@@ -289,8 +289,12 @@ Normalize(v2f A)
 {
 	v2f Result = A;
 
-	f32 c = 1.0f / sqrt(Dot(A, A));
-	Result *= c;
+	f32 C = Sqrt(Dot(A, A));
+
+	// TODO(Justin): Safe ratio or ASSERT?
+	ASSERT(C != 0.0f);
+
+	Result = (1.0f / C) * A;
 
 	return(Result);
 }
@@ -301,11 +305,6 @@ Cross(v2f A, v2f B)
 
 	Result.x = A.y * B.x - A.x * B.y;
 	Result.y = A.x * B.y - A.y * B.x;
-
-	return(Result);
-
-	f32 c = 1.0f / sqrt(Dot(A, A));
-	Result *= c;
 
 	return(Result);
 }
@@ -746,8 +745,8 @@ Mat4XRotation(f32 Angle)
 	mat4 R =
 	{
 		{{1, 0, 0, 0},
-		{0, cos(Angle), -1.0f * sin(Angle), 0},
-		{0, sin(Angle), cos(Angle), 0},
+		{0, Cos(Angle), -1.0f * Sin(Angle), 0},
+		{0, Sin(Angle), Cos(Angle), 0},
 		{0, 0, 0, 1}},
 	};
 	return(R);
@@ -758,9 +757,9 @@ Mat4YRotation(f32 Angle)
 {
 	mat4 R =
 	{
-		{{cos(Angle), 0 , sin(Angle), 0},
+		{{Cos(Angle), 0 , Sin(Angle), 0},
 		{0, 1, 0, 0},
-		{-1.0f * sin(Angle), 0, cos(Angle), 0},
+		{-1.0f * Sin(Angle), 0, Cos(Angle), 0},
 		{0, 0, 0, 1}},
 	};
 	return(R);
@@ -771,8 +770,8 @@ Mat4ZRotation(f32 Angle)
 {
 	mat4 R =
 	{
-		{{cos(Angle), -1.0f * sin(Angle), 0, 0},
-		{sin(Angle), cos(Angle), 0, 0},
+		{{Cos(Angle), -1.0f * Sin(Angle), 0, 0},
+		{Sin(Angle), Cos(Angle), 0, 0},
 		{0, 0, 1, 0},
 		{0, 0, 0, 1}},
 	};
@@ -828,10 +827,11 @@ Mat4PerspectiveGL(f32 FOV, f32 AspectRatio, f32 ZNear, f32 ZFar)
 {
 	mat4 R = {};
 
+	//TODO(Justin): Safe ratio or ASSERT?
 	f32 HFOV = FOV / 2.0f;
 
-	R.e[0][0] = 1.0f / (tanf(HFOV) * AspectRatio);
-    R.e[1][1] = 1.0f / tanf(HFOV);
+	R.e[0][0] = 1.0f / (Tan(HFOV) * AspectRatio);
+    R.e[1][1] = 1.0f / Tan(HFOV);
     R.e[2][3] = 1.0f;
     R.e[2][2] = (ZFar + ZNear) / (ZFar - ZNear);
     R.e[3][2] = -(2.0f *ZFar*ZNear) / (ZFar - ZNear);
