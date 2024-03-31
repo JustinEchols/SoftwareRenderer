@@ -167,8 +167,21 @@ inline v2i
 V2I(s32 X, s32 Y)
 {
 	v2i Result;
+
 	Result.x = X;
 	Result.y = Y;
+
+	return(Result);
+}
+
+inline v2f
+V2F(f32 C)
+{
+	v2f Result;
+
+	Result.x = C;
+	Result.y = C;
+
 	return(Result);
 }
 
@@ -397,11 +410,14 @@ operator *(v3f A, f32 c)
 }
 
 inline v3f
-operator ~(v3f A)
+operator *=(v3f &A, f32 c)
 {
-	v3f Result =  -1.0f * A;
-	return(Result);
+	A = c * A;
+	return(A);
 }
+
+
+
 
 inline v3f
 operator +(v3f A, v3f B)
@@ -487,7 +503,7 @@ V4F(f32 X, f32 Y, f32 Z, f32 W)
 }
 
 inline v4f
-v4f_create_from_v3f(v3f A, f32 W)
+V4FCreateFromV3F(v3f A, f32 W)
 {
 	v4f Result;
 
@@ -665,7 +681,7 @@ Mat4(v3f E1, v3f E2, v3f E3)
 inline v3f
 operator *(mat4 A, v3f V)
 {
-	v3f R = Mat4Transform(A, v4f_create_from_v3f(V, 1.0f)).xyz;
+	v3f R = Mat4Transform(A, V4FCreateFromV3F(V, 1.0f)).xyz;
 	return(R);
 }
 
@@ -716,38 +732,38 @@ Mat4Scale(f32 C)
 }
 
 inline mat4
-Mat4XRotation(f32 angle)
+Mat4XRotation(f32 Angle)
 {
 	mat4 R =
 	{
 		{{1, 0, 0, 0},
-		{0, cos(angle), -1.0f * sin(angle), 0},
-		{0, sin(angle), cos(angle), 0},
+		{0, cos(Angle), -1.0f * sin(Angle), 0},
+		{0, sin(Angle), cos(Angle), 0},
 		{0, 0, 0, 1}},
 	};
 	return(R);
 }
 
 inline mat4
-Mat4YRotation(f32 angle)
+Mat4YRotation(f32 Angle)
 {
 	mat4 R =
 	{
-		{{cos(angle), 0 , sin(angle), 0},
+		{{cos(Angle), 0 , sin(Angle), 0},
 		{0, 1, 0, 0},
-		{-1.0f * sin(angle), 0, cos(angle), 0},
+		{-1.0f * sin(Angle), 0, cos(Angle), 0},
 		{0, 0, 0, 1}},
 	};
 	return(R);
 }
 
 inline mat4
-Mat4ZRotation(f32 angle)
+Mat4ZRotation(f32 Angle)
 {
 	mat4 R =
 	{
-		{{cos(angle), -1.0f * sin(angle), 0, 0},
-		{sin(angle), cos(angle), 0, 0},
+		{{cos(Angle), -1.0f * sin(Angle), 0, 0},
+		{sin(Angle), cos(Angle), 0, 0},
 		{0, 0, 1, 0},
 		{0, 0, 0, 1}},
 	};
@@ -834,7 +850,6 @@ Mat4CameraMap(v3f P, v3f Target)
 	v3f CameraUp = Normalize(Cross(CameraDirection, CameraRight));
 
 	mat4 Rotate = Mat4TransposeMat3(Mat4(CameraRight, CameraUp, CameraDirection));
-	//mat4 Rotate = Mat4(CameraRight, CameraUp, CameraDirection);
 
 	mat4 Translate = Mat4Translation(-1.0f * P);
 
