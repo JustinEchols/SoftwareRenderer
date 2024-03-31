@@ -117,7 +117,7 @@ union v4f
 
 
 
-struct m2x2
+struct mat2 
 {
 	// NOTE(Justin): Stored in ROW MAJOR order i.e. e[ROW][COL]
 	f32 e[2][2];
@@ -568,14 +568,14 @@ operator *(f32 c, v4f A)
 }
 
 //
-// NOTE(Justin): m2x2 operations
+// NOTE(Justin): mat2 operations
 //
 
-internal m2x2
-operator *(m2x2 A, m2x2 B)
+internal mat2
+operator *(mat2 A, mat2 B)
 {
 	// NOTE(Justin): Instructional, NOT optimized.
-	m2x2 R = {};
+	mat2 R = {};
 
 	// For each row of A
 	for (int r = 0; r <= 1; r++) {
@@ -593,7 +593,7 @@ operator *(m2x2 A, m2x2 B)
 }
 
 internal v2f
-m2x2_transform(m2x2 A, v2f V)
+Mat2Transform(mat2 A, v2f V)
 {
 	v2f R;
 
@@ -605,24 +605,24 @@ m2x2_transform(m2x2 A, v2f V)
 }
 
 inline v2f
-operator *(m2x2 A, v2f V)
+operator *(mat2 A, v2f V)
 {
-	v2f R = m2x2_transform(A, V);
+	v2f R = Mat2Transform(A, V);
 	return(R);
 }
 
 internal f32
-m2x2_det(m2x2 A)
+Det(mat2 A)
 {
 	f32 Result = 0;
 	Result = A.e[0][0] * A.e[1][1] - A.e[0][1] * A.e[1][0];
 	return(Result);
 }
 
-internal m2x2
-m2x2_adjoint_create(m2x2 A)
+internal mat2
+Mat2Adjoint(mat2 A)
 {
-	m2x2 Result;
+	mat2 Result;
 	Result.e[0][0] = A.e[1][1];
 	Result.e[1][1] = A.e[0][0];
 	Result.e[0][1] = -A.e[0][1];
