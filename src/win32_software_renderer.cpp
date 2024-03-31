@@ -49,15 +49,7 @@ Win32CursorPosRelativeToClient(HWND Window)
 	return(Result);
 }
 
-typedef struct
-{
-	HMODULE AppDLL;
-	FILETIME DLLWriteTime;
 
-	app_update_and_render_func  *app_update_and_render;
-
-	b32 is_valid;
-} win32_app_code;
 
 inline FILETIME
 Win32FileLastWriteTime(char *FileName)
@@ -87,7 +79,7 @@ Win32AppCodeLoad(char *DllNameSrc, char *DllNameTmp)
 			GetProcAddress(Result.AppDLL, "app_update_and_render");
 		if(Result.app_update_and_render)
 		{
-			Result.is_valid = true;
+			Result.IsValid = true;
 		}
 	}
 	return(Result);
@@ -95,7 +87,8 @@ Win32AppCodeLoad(char *DllNameSrc, char *DllNameTmp)
 
 DEBUG_PLATFORM_FILE_FREE(debug_platform_file_free)
 {
-	if(Memory) {
+	if(Memory)
+	{
 		VirtualFree(Memory, 0, MEM_RELEASE);
 	}
 }
@@ -103,10 +96,11 @@ DEBUG_PLATFORM_FILE_FREE(debug_platform_file_free)
 internal void
 Win32AppCodeUnload(win32_app_code *AppCode)
 {
-	if(AppCode->AppDLL) {
+	if(AppCode->AppDLL)
+	{
 		FreeLibrary(AppCode->AppDLL);
 	}
-	AppCode->is_valid = false;
+	AppCode->IsValid = false;
 	AppCode->app_update_and_render = app_update_and_render_stub;
 }
 
