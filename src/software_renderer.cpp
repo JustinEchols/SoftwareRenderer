@@ -303,12 +303,21 @@ Barycentric(v3f X, v3f Y, v3f Z, v3f P)
 
 // TODO(Justin): Clean this function up.
 internal void
-TriangleDraw(app_back_buffer *AppBackBuffer, triangle *Triangle)
+TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, triangle *Triangle)
 {
+	triangle Fragment = {};
+	for(u32 Index = 0; Index < 3; Index++)
+	{
+		Fragment.Vertices[Index] = Mat4MVP * Triangle->Vertices[Index];
+		Fragment.Vertices[Index] = (1.0f / Fragment.Vertices[Index].w) * Fragment.Vertices[Index];
+		Fragment.Vertices[Index] = Mat4ScreenSpace * Fragment.Vertices[Index];
+
+	}
+
 	v3f Tmp = {};
-	v3f Min = Triangle->Vertices[0].xyz;
-	v3f Mid = Triangle->Vertices[1].xyz;
-	v3f Max = Triangle->Vertices[2].xyz;
+	v3f Min = Fragment.Vertices[0].xyz;
+	v3f Mid = Fragment.Vertices[1].xyz;
+	v3f Max = Fragment.Vertices[2].xyz;
 
 	if(Min.y > Max.y)
 	{
@@ -711,17 +720,38 @@ CameraUpdate(app_state *AppState, app_back_buffer *BackBuffer, camera *Camera, f
 }
 
 internal void
-CubeDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh_attributes *CubeMesh)
+MeshVertexPositionsDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh_attributes *Mesh)
 {
 	v2f Dim = V2F(1.0f);
-	for(u32 Index = 0; Index < CubeMesh->VertexCount; ++Index)
+	for(u32 Index = 0; Index < Mesh->VertexCount; ++Index)
 	{
-		v4f Vertex = V4FCreateFromV3F(CubeMesh->Vertices[Index], 1.0f);
+		v4f Vertex = V4FCreateFromV3F(Mesh->Vertices[Index], 1.0f);
+
 		Vertex = Mat4MVP * Vertex;
 		Vertex = (1.0f / Vertex.w) * Vertex;
 		Vertex = Mat4ScreenSpace * Vertex;
 
 		RectangleDraw(AppBackBuffer, Vertex.xy - Dim, Vertex.xy + Dim, V3F(1.0f));
+	}
+}
+
+internal void
+CubeWireFrameDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh_attributes *CubeMesh)
+{
+	v2f Dim = V2F(1.0f);
+	for(u32 Index = 0; Index < CubeMesh->VertexCount; ++Index)
+	{
+		v4f Vertex0 = V4FCreateFromV3F(CubeMesh->Vertices[Index], 1.0f);
+		v4f Vertex1 = V4FCreateFromV3F(CubeMesh->Vertices[(Index + 1) % CubeMesh->VertexCount], 1.0f);
+
+		Vertex0 = Mat4MVP * Vertex0;
+		Vertex1 = Mat4MVP * Vertex1;
+		Vertex0 = (1.0f / Vertex0.w) * Vertex0;
+		Vertex1 = (1.0f / Vertex1.w) * Vertex1;
+		Vertex0 = Mat4ScreenSpace * Vertex0;
+		Vertex1 = Mat4ScreenSpace * Vertex1;
+
+		LineDDADraw(AppBackBuffer, Vertex0.xy, Vertex1.xy, V3F(1.0f));
 	}
 }
 
@@ -740,7 +770,7 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 										 (u8 *)AppMemory->PermanentStorage + sizeof(app_state));
 
 		AppState->CubeMesh = DEBUGObjReadEntireFile(Thread,  "models/cube.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
-
+		AppState->SuzanneMesh = DEBUGObjReadEntireFile(Thread,  "models/suzanne.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
 
 		camera *Camera = &AppState->Camera;
 		Camera->Pos = {0.0f, 0.0f, 3.0f};
@@ -783,48 +813,48 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 	app_keyboard_controller *KeyBoardController = &AppInput->KeyboardController;
 
 
-
-	v3f Shift = {};
-	v3f Target = V3F(0.0f, 0.0f, -1.0f);
+	v3f ddP = {};
 	if(KeyBoardController->W.EndedDown)
 	{
-		Shift = {0.0f, 0.0f, -1.0f * dt};
-		Camera->Pos += Shift;
+		ddP += {0.0f, 0.0f, -1.0f * dt};
 	}
 
 	if(KeyBoardController->S.EndedDown)
 	{
-		Shift = {0.0f, 0.0f, 1.0f * dt};
-		Camera->Pos += Shift;
+		ddP += {0.0f, 0.0f, 1.0f * dt};
 	}
 	if(KeyBoardController->A.EndedDown)
 	{
-		Shift = {-1.0f * dt, 0.0f, 0.0f};
-		Camera->Pos += -dt * Normalize(Cross(Target, YAxis()));
+		ddP += {-1.0f * dt, 0.0f, 0.0f};
 	}
 	if(KeyBoardController->D.EndedDown)
 	{
-		Camera->Pos += dt * Normalize(Cross(Target, YAxis()));
+		ddP += dt * Normalize(Cross(Target, YAxis()));
 	}
 	if(KeyBoardController->Up.EndedDown)
 	{
-		Shift = dt * Target;
-		Camera->Pos += Shift;
+		ddP += dt * Target;
 	}
 	if(KeyBoardController->Down.EndedDown)
 	{
-		Shift = -dt * Target;
-		Camera->Pos += Shift;
+		ddP += -dt * Target;
 	}
+
+	if((ddP.x != 0.0f) && (ddP.y != 0.0f) && (ddP.z != 0.0f))
+	{
+		ddP = Normalize(ddP);
+	}
+
+	ddP *= 8.0f;
+	Camera->Pos += ddP;
 
 	CameraUpdate(AppState, AppBackBuffer, Camera, AppInput->dMouseX, AppInput->dMouseY, dt);
 
 	AppState->MapToCamera = Mat4CameraMap(Camera->Pos, Camera->Pos + Camera->Direction);
+
 	mat4 MapToCamera = AppState->MapToCamera;
-
-	mat4 MapToWorld = Mat4WorldSpaceMap(AppState->Triangle.Pos.xyz);
+	mat4 MapToWorld = Mat4WorldSpaceMap(V3F(0.0f, 0.0f, -30.0f));
 	mat4 MapToPersp = AppState->MapToPersp;
-
 	mat4 Mat4MVP = MapToPersp * MapToCamera * MapToWorld;
 	mat4 Mat4ScreenSpace = Mat4ScreenSpaceMap(AppBackBuffer->Width, AppBackBuffer->Height);
 
@@ -842,26 +872,5 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		}
 	}
 
-	// Triangle
-	mat4 RotateY = Mat4YRotation((dt * 2.0f * PI32 / 4.0f));
-	triangle *Triangle = &AppState->Triangle;
-	triangle Fragment;
-	for(u32 i = 0; i < 3; i++)
-	{
-		Triangle->Vertices[i] = RotateY * Triangle->Vertices[i];
-
-		Fragment.Vertices[i] = Mat4MVP * Triangle->Vertices[i];
-		Fragment.Vertices[i] = (1.0f / Fragment.Vertices[i].w) * Fragment.Vertices[i];
-		Fragment.Vertices[i] = Mat4ScreenSpace * Fragment.Vertices[i];
-
-	}
-
-	//TriangleDraw(AppBackBuffer, &Fragment);
-
-	//AxisDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, V4F(0.0f, 0.0, 0.0, 1.0f));
-
-	MapToWorld = Mat4WorldSpaceMap(V3F(0.0, 0.0f, -30.0f));
-	Mat4MVP = MapToPersp * MapToCamera * MapToWorld;
-	CubeDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, &AppState->CubeMesh);
-	//GridDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, V4F(0.0f, 0.0f, 0.0f, 1.0f));
+	MeshVertexPositionsDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, &AppState->SuzanneMesh);
 }
