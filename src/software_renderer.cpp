@@ -150,19 +150,7 @@ CircleDraw(app_back_buffer *AppBackBuffer, circle Circle, v3f Color)
 	}
 }
 
-internal v4f
-LerpPoints(v4f P1, v4f P2, f32 t)
-{
-	v4f Result = (1.0f - t) * P1 + t * P2;
-	return(Result);
-}
 
-internal v3f
-LerpColor(v3f ColorA, v3f ColorB, f32 t)
-{
-	v3f Result = (1.0f - t) * ColorA + t * ColorB;
-	return(Result);
-}
 
 internal void
 RectangleDraw(app_back_buffer *AppBackBuffer, v2f Min, v2f Max, v3f Color)

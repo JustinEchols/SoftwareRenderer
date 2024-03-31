@@ -391,6 +391,8 @@ Cross(v3f A, v3f B)
 	return(Result);
 }
 
+
+
 inline v3f
 operator *(f32 c, v3f A)
 {
@@ -482,6 +484,13 @@ inline v3f
 ZAxis()
 {
 	v3f Result = {0.0f, 0.0f, 1.0f};
+	return(Result);
+}
+
+inline v3f
+Lerp(v3f P1, f32 t, v3f P2)
+{
+	v3f Result = (1.0f - t) * P1 + t * P2;
 	return(Result);
 }
 
