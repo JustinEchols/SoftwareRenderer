@@ -31,8 +31,9 @@ PushSize_(memory_arena *Arena, memory_index Size)
 	return(Result);
 }
 
-#include "software_renderer_math.h"
 #include "software_renderer_intrinsics.h"
+#include "software_renderer_math.h"
+
 
 // TODO(Justin): Structs and functions dealing with geometric Dss need ot go in
 // a geometry file
