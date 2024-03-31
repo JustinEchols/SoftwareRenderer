@@ -66,23 +66,23 @@ ColorConvertV3fToU32(v3f Color)
 internal void
 PixelSet(app_back_buffer *AppBackBuffer, v2f PixelPos, v3f Color)
 {
-	int x = (int)(PixelPos.x + 0.5f);
-	int y = (int)(PixelPos.y + 0.5f);
+	int X = (int)(PixelPos.x + 0.5f);
+	int Y = (int)(PixelPos.y + 0.5f);
 
-	if((x < 0) || (x >= AppBackBuffer->Width))
+	if((X < 0) || (X >= AppBackBuffer->Width))
 	{
 		return;
 	}
-	if((y < 0) || (y >= AppBackBuffer->Height))
+	if((Y < 0) || (Y >= AppBackBuffer->Height))
 	{
 		return;
 	}
 
 	u32 color = ColorConvertV3fToU32(Color);
 
-	u8 *pixel_row = (u8 *)AppBackBuffer->Memory + AppBackBuffer->Stride * y + AppBackBuffer->BytesPerPixel * x;
-	u32 *pixel = (u32 *)pixel_row;
-	*pixel = color;
+	u8 *PixelRow = (u8 *)AppBackBuffer->Memory + AppBackBuffer->Stride * Y + AppBackBuffer->BytesPerPixel * X;
+	u32 *Pixel = (u32 *)PixelRow;
+	*Pixel = color;
 }
 
 internal void
@@ -90,24 +90,25 @@ LineDDADraw(app_back_buffer *AppBackBuffer, v2f P1, v2f P2, v3f Color)
 {
 	v2f Diff = P2 - P1;
 
-	s32 dx = F32RoundToS32(Diff.x);
-	s32 dy = F32RoundToS32(Diff.y);
+	s32 dX = F32RoundToS32(Diff.x);
+	s32 dY = F32RoundToS32(Diff.y);
 
-	s32 pixel_count, pixel_index;
+	s32 PixelCount, PixelIndex;
 
-	if(ABS(dx) > ABS(dy))
+	if(ABS(dX) > ABS(dY))
 	{
-		pixel_count = ABS(dx);
+		PixelCount = ABS(dX);
 	}
 	else
 	{
-		pixel_count = ABS(dy);
+		PixelCount = ABS(dY);
 	}
 
-	v2f Increment = {(f32)dx / (f32)pixel_count, (f32)dy / (f32)pixel_count};
+	v2f Increment = {(f32)dX / (f32)PixelCount, (f32)dY / (f32)PixelCount};
 	v2f PixelPos = P1;
+
 	PixelSet(AppBackBuffer, PixelPos, Color);
-	for(pixel_index = 0; pixel_index < pixel_count; pixel_index++)
+	for(PixelIndex = 0; PixelIndex < PixelCount; PixelIndex++)
 	{
 		PixelPos += Increment;
 		PixelSet(AppBackBuffer, PixelPos, Color);
