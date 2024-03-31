@@ -275,8 +275,8 @@ Win32MainWindowCallback(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
 
 internal void
 StrCat(char *StrA, size_t StrASize,
-		      char *StrB, size_t StrBSize,
-			  char *Dest, size_t DestSize) 
+	   char *StrB, size_t StrBSize,
+	   char *Dest, size_t DestSize) 
 {
 	// TODO(Justin): Bounds checking.
 	for(int Index = 0; Index < StrASize; Index++) {
@@ -298,9 +298,6 @@ Win32ProcessKeyboardMessage(app_button_state *NewState, b32 IsDown)
 		++NewState->HalfTransitionCount;
 	}
 }
-
-// NOTE(Justin): https://github.com/glfw/glfw/blob/master/src/win32_window.c
-
 
 internal void
 Win32ProcessPendingMessages(app_input *Input, app_keyboard_controller *KeyboardController)
@@ -483,7 +480,6 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 			RegisterRawInputDevices(Rid, 1, sizeof(Rid[0]));
 
 			ShowCursor(false);
-			//Win32ClipCursorToClientArea(Window);
 			Win32CenterCursor(Window);
 
 			app_memory AppMemory = {};
@@ -548,13 +544,6 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 					dMouseY = 0.0f;
 
 					Win32ProcessPendingMessages(NewInput, NewKeyboardController);
-
-					//POINT MouseP = Win32CursorPosRelativeToClient(Window);
-					//NewInput->MouseX = MouseP.x;
-					//NewInput->MouseY = Win32GlobalBackBuffer.Height - MouseP.y;
-
-					// NOTE(Justin): Make the mouse position of the app relative to the
-					// bottom left corner of the client area
 
 					NewInput->dMouseX = dMouseX;
 					NewInput->dMouseY = dMouseY;
