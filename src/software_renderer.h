@@ -116,6 +116,10 @@ struct mesh_attributes
 	v3f *Vertices;
 	v2f *TexCoords;
 	v3f *Normals;
+
+	// NOTE(Justin): A face is, in this context, is defined as 3-tuple in the
+	// file as x/y/z. The format is {vertex position index} / {vertex texture
+	// index} / {vertex normal index}.
 	u32 *Faces;
 
 	u32 VertexCount;
@@ -133,6 +137,7 @@ struct app_state
 
 	loaded_obj Cube;
 	mesh_attributes CubeMesh;
+	mesh_attributes SuzanneMesh;
 
 	camera Camera;
 	u32 CameraIndex;
