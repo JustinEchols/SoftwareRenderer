@@ -97,8 +97,43 @@ struct camera
 	f32 Pitch;
 };
 
+struct loaded_obj
+{
+	char *FileName;
+	u8 *Memory;
+	u32 Size;
+};
+
+struct mesh_attributes
+{
+	// TODO(Justin): Pull this out to a loaded_obj data structure
+	u8 *Memory;
+	u32 Size;
+
+	loaded_obj *Asset;
+
+	u32 *Indices;
+	v3f *Vertices;
+	v2f *TexCoords;
+	v3f *Normals;
+	u32 *Faces;
+
+	u32 VertexCount;
+	u32 TexCoordCount;
+	u32 NormalCount;
+	u32 FaceCount;
+
+	u32 FaceStride;
+	u32 FaceIndexCount;
+};
+
 struct app_state
 {
+	memory_arena WorldArena;
+
+	loaded_obj Cube;
+	mesh_attributes CubeMesh;
+
 	camera Camera;
 	u32 CameraIndex;
 

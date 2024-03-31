@@ -454,109 +454,227 @@ GridDraw(app_back_buffer *BackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, v4f P)
 	}
 }
 
-
-struct loaded_obj
+inline f32
+StringToFloat(char *String)
 {
-	char *file_name;
-	u8 *Memory;
-	u32 Size;
-};
+	f32 Result = (f32)atof(String);
+	return(Result);
+}
 
-struct mesh_attributes
+inline u32
+CharTOU32(char C)
 {
-	loaded_obj *Asset;
+	u32 Result = 0;
+	Result = Result * 10 + C - '0';
+	return(Result);
+}
 
-	u32 *indices;
-	v3f *Vertices;
-	v2f *Tex_coords;
-	v3f *Normals;
-	u32 *faces;
-
-	u32 vertex_count;
-	u32 tex_coord_count;
-	u32 normal_count;
-	u32 face_count;
-
-	u32 face_Stride;
-	u32 face_index_count;
-};
-
-
-#if 0
-internal mesh_attributes *
-model_process_file_contents(Memory_arena *Arena, loaded_obj ObjFile)
+inline b32
+CharIsNum(char C)
 {
-	mesh_attributes *Result = push_struct(Arena, mesh_attributes);
-	char *contents = (char *)ObjFile.Memory;
-	ASSERT(contents > 0);
-	if(contents) {
-		// First count each of the attributes st can push mesh attributes
+	b32 Result = false;
+
+	if((C >= '0') && (C <= '9'))
+	{
+		Result = true;
+	}
+
+	return(Result);
+}
+
+internal void
+ParseV3VertexAttribute(u8 *Data, v3f *AttributeArray, u32 Count, u32 FloatCount)
+{
+	for(u32 Index = 0; Index < Count; ++Index)
+	{
+		f32 Floats[3] = {};
+		for(u32 FloatIndex = 0; FloatIndex < FloatCount; ++FloatIndex)
+		{
+			f32 Value = StringToFloat((char *)Data);
+			Floats[FloatIndex] = Value;
+			while(*Data != ' ')
+			{
+				Data++;
+			}
+			Data++;
+		}
+
+		v3f Attribute = {Floats[0], Floats[1], Floats[2]};
+		AttributeArray[Index] = Attribute;
+	}
+}
+
+// TODO(Jusitn): Do the parsing in one routine
+internal void
+ParseV2VertexAttribute(u8 *Data, v2f *AttributeArray, u32 Count, u32 FloatCount)
+{
+	for(u32 Index = 0; Index < Count; ++Index)
+	{
+		f32 Floats[2] = {};
+		for(u32 FloatIndex = 0; FloatIndex < FloatCount; ++FloatIndex)
+		{
+			f32 Value = StringToFloat((char *)Data);
+			Floats[FloatIndex] = Value;
+			while(*Data != ' ')
+			{
+				Data++;
+			}
+			Data++;
+		}
+
+		v2f Attribute = {Floats[0], Floats[1]};
+
+		AttributeArray[Index] = Attribute;
+
+	}
+}
+
+internal mesh_attributes
+DEBUGObjReadEntireFile(thread_context *Thread, char *FileName, memory_arena *Arena,
+		debug_platform_file_read_entire_func *DEBUGPlatformReadEntireFile)
+{
+	mesh_attributes Result = {};
+	debug_file_read_result ObjFile = DEBUGPlatformReadEntireFile(Thread, FileName);
+	if(ObjFile.Size != 0)
+	{
+		Result.Memory = (u8 *)ObjFile.Memory;
+		Result.Size = ObjFile.Size;
+
+		u32 VertexCount = 0;
+		u32 TextureCoordCount = 0;
+		u32 NormalCount = 0;
+		u32 FaceCount = 0;
+
+		u32 IndexCount = 0;
+
 		char v = 'v';
-		char space = ' ';
+		char Space = ' ';
 		char t = 't';
 		char n = 'n';
 		char f = 'f';
 
-		// Offsets from the start of the file to the start of an atrribute
-		u32 first_vert_index = 0;
-		u32 first_tex_index = 0;
-		u32 first_normal_index = 0;
-		u32 first_face_index = 0;
+		u32 FirstVertexOffset = 0;
+		u32 FirstTextureOffset = 0;
+		u32 FirstNormalOffset = 0;
+		u32 FirstFaceOffset = 0;
 
-		u32 face_rows = 0;
-		u32 attribute_location = 0;
+		u32 FaceRows = 0;
 
-		while (*contents++) {
-			char char_at = *contents;
-			char char_next = *(contents + 1);
+		u32 FilePosition = 0;
 
-			if(char_next == '\0') {
-				ASSERT((char_at > 0) && (char_at < 127) && (char_at == '\n'));
+		u8 *Content = Result.Memory;
+		while(*Content++)
+		{
+			char Current = *Content;
+			char Next = *(Content + 1);
+			if(Next == '\0')
+			{
+				ASSERT((Current > 0) && (Current < 127) && (Current == '\n'));
 				break;
 			}
 
-			if((char_at == v) && (char_next == space)) {
-				if(first_vert_index == 0) {
-					first_vert_index = attribute_location + 3;
+			if((Current == v) && (Next == Space))
+			{
+				if(FirstVertexOffset == 0)
+				{
+					FirstVertexOffset = FilePosition + 3;
 				}
-				Result->vertex_count++;
+				Result.VertexCount++;
 			}
-			if((char_at == v) && (char_next == n)) {
-				if(first_normal_index == 0) {
-					first_normal_index = attribute_location + 4;
+
+			if((Current == t) && (Next == Space))
+			{
+				if(FirstTextureOffset == 0)
+				{
+					FirstTextureOffset = FilePosition + 4;
 				}
-				Result->normal_count++;
+				Result.TexCoordCount++;
 			}
-			if((char_at == v) && (char_next == t)) {
-				if(first_tex_index == 0) {
-					first_tex_index = attribute_location + 4;
+
+			if((Current == n) && (Next == Space))
+			{
+				if(FirstNormalOffset == 0)
+				{
+					FirstNormalOffset = FilePosition + 4;
 				}
-				Result->tex_coord_count++;
+				Result.NormalCount++;
 			}
-			if((char_at == f) && (char_next == space)) {
-				if(first_face_index == 0) {
-					first_face_index = attribute_location + 3;
+
+			if((Current == f) && (Next == Space))
+			{
+				if(FirstFaceOffset == 0)
+				{
+					FirstFaceOffset = FilePosition + 3;
 				}
-				face_rows++;
+				FaceRows++;
 			}
-			attribute_location++;
+			FilePosition++;
+		}
+
+		FaceCount = FaceRows * 3 * 4;
+		Result.FaceCount = FaceCount;
+
+		Result.Vertices = PushArray(Arena, Result.VertexCount, v3f);
+		Result.TexCoords = PushArray(Arena, Result.TexCoordCount, v2f);
+		Result.Normals = PushArray(Arena, Result.NormalCount, v3f);
+		Result.Faces = PushArray(Arena, Result.FaceCount, u32);
+
+		Content = Result.Memory;
+		Content += FirstVertexOffset;
+
+		u8 *VertexData =  Content;
+		ParseV3VertexAttribute(VertexData, Result.Vertices, Result.VertexCount, 3);
+
+		Content = Result.Memory;
+		Content += FirstTextureOffset;
+
+		u8 *TextureData = Content;
+		ParseV2VertexAttribute(TextureData, Result.TexCoords, Result.TexCoordCount, 2);
+
+		Content = Result.Memory;
+		Content += FirstNormalOffset;
+
+		u8 *NormalData = Content;
+		ParseV3VertexAttribute(NormalData, Result.Normals, Result.NormalCount, 3);
+
+		Content = Result.Memory;
+		Content += FirstFaceOffset;
+
+		u8 *FaceData = Content;
+		u32 FaceIndex = 0;
+		char *C = (char *)FaceData;
+		for(u32 Iteration = 0; Iteration < FaceCount; ++Iteration)
+		{
+			b32 Updated = false;
+			u32 Num = 0;
+			while(CharIsNum(*C))
+			{
+				Num = Num * 10 + (*C) - '0';
+				C++;
+				Updated = true;
+			}
+
+			if(Updated)
+			{
+				Result.Faces[FaceIndex++] = Num;
+			}
+
+			while(*C && !CharIsNum(*C))
+			{
+				C++;
+			}
 		}
 	}
-	Result->Vertices = push_array(Arena, Result->vertex_count, v3f);
-	ontents = ObjFile.Memory;
-	contents += first_vert_index;
-	char *vert = contents;
 
 	return(Result);
 }
-#endif
+
+#if 0
 internal loaded_obj
-DEBUGModelLoad(thread_context *Thread, debug_platform_file_read_entire_func *FileReadEntire, char *file_name)
+DEBUGModelLoad(thread_context *Thread, debug_platform_file_read_entire_func *FileReadEntire, char *FileName)
 {
 	loaded_obj Result = {};
-	debug_file_read_result FileReadResult = FileReadEntire(Thread, file_name);
-
-	ASSERT(FileReadResult.Size > 0);
+	debug_file_read_result FileReadResult = FileReadEntire(Thread, FileName);
 
 	if(FileReadResult.Size > 0)
 	{
@@ -566,6 +684,7 @@ DEBUGModelLoad(thread_context *Thread, debug_platform_file_read_entire_func *Fil
 
 	return(Result);
 }
+#endif
 
 internal void
 CameraUpdate(app_state *AppState, app_back_buffer *BackBuffer, camera *Camera, f32 dMouseX, f32 dMouseY, f32 dt)
@@ -591,6 +710,21 @@ CameraUpdate(app_state *AppState, app_back_buffer *BackBuffer, camera *Camera, f
 	Camera->Direction = Normalize(Camera->Direction);
 }
 
+internal void
+CubeDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh_attributes *CubeMesh)
+{
+	v2f Dim = V2F(1.0f);
+	for(u32 Index = 0; Index < CubeMesh->VertexCount; ++Index)
+	{
+		v4f Vertex = V4FCreateFromV3F(CubeMesh->Vertices[Index], 1.0f);
+		Vertex = Mat4MVP * Vertex;
+		Vertex = (1.0f / Vertex.w) * Vertex;
+		Vertex = Mat4ScreenSpace * Vertex;
+
+		RectangleDraw(AppBackBuffer, Vertex.xy - Dim, Vertex.xy + Dim, V3F(1.0f));
+	}
+}
+
 extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 {
 
@@ -601,6 +735,12 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 	{
 		// NOTE(Justin): The starting direction paramters product a direction of
 		// (0, 0, -1) which is correct
+
+		ArenaInitialize(&AppState->WorldArena, AppMemory->PermanentStorageSize - sizeof(app_state),
+										 (u8 *)AppMemory->PermanentStorage + sizeof(app_state));
+
+		AppState->CubeMesh = DEBUGObjReadEntireFile(Thread,  "models/cube.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
+
 
 		camera *Camera = &AppState->Camera;
 		Camera->Pos = {0.0f, 0.0f, 3.0f};
@@ -679,8 +819,6 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 
 	CameraUpdate(AppState, AppBackBuffer, Camera, AppInput->dMouseX, AppInput->dMouseY, dt);
 
-
-
 	AppState->MapToCamera = Mat4CameraMap(Camera->Pos, Camera->Pos + Camera->Direction);
 	mat4 MapToCamera = AppState->MapToCamera;
 
@@ -718,8 +856,12 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 
 	}
 
-	TriangleDraw(AppBackBuffer, &Fragment);
+	//TriangleDraw(AppBackBuffer, &Fragment);
 
-	AxisDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, V4F(0.0f, 0.0, 0.0, 1.0f));
+	//AxisDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, V4F(0.0f, 0.0, 0.0, 1.0f));
+
+	MapToWorld = Mat4WorldSpaceMap(V3F(0.0, 0.0f, -30.0f));
+	Mat4MVP = MapToPersp * MapToCamera * MapToWorld;
+	CubeDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, &AppState->CubeMesh);
 	//GridDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, V4F(0.0f, 0.0f, 0.0f, 1.0f));
 }
