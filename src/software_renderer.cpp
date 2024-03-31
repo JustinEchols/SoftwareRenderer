@@ -166,41 +166,40 @@ LerpColor(v3f ColorA, v3f ColorB, f32 t)
 internal void
 RectangleDraw(app_back_buffer *AppBackBuffer, v2f Min, v2f Max, v3f Color)
 {
-	// TODO(Justin): Bounds checking
-	s32 x_min = F32RoundToU32(Min.x);
-	s32 x_max = F32RoundToU32(Max.x);
+	s32 XMin = F32RoundToU32(Min.x);
+	s32 XMax = F32RoundToU32(Max.x);
 
-	s32 y_min = F32RoundToU32(Min.y);
-	s32 y_max = F32RoundToU32(Max.y);
+	s32 YMin = F32RoundToU32(Min.y);
+	s32 YMax = F32RoundToU32(Max.y);
 
-	if(x_min < 0)
+	if(XMin < 0)
 	{
-		x_min = 0;
+		XMin = 0;
 	}
-	if(x_max > AppBackBuffer->Width)
+	if(XMax > AppBackBuffer->Width)
 	{
-		x_max = AppBackBuffer->Width;
+		XMax = AppBackBuffer->Width;
 	}
-	if(y_min < 0)
+	if(YMin < 0)
 	{
-		y_min = 0;
+		YMin = 0;
 	}
-	if(y_max > AppBackBuffer->Height)
+	if(YMax > AppBackBuffer->Height)
 	{
-		y_max = AppBackBuffer->Height;
+		YMax = AppBackBuffer->Height;
 	}
 
 	u32 color = ColorConvertV3fToU32(Color);
 
-	u8 * pixel_row = (u8 *)AppBackBuffer->Memory + AppBackBuffer->Stride * y_min + AppBackBuffer->BytesPerPixel * x_min;
-	for(s32 y = y_min; y < y_max; y++)
+	u8 *PixelRow = (u8 *)AppBackBuffer->Memory + AppBackBuffer->Stride * YMin + AppBackBuffer->BytesPerPixel * XMin;
+	for(s32 Y = YMin; Y < YMax; ++Y)
 	{
-		u32 *pixel = (u32 *)pixel_row;
-		for(s32 x = x_min; x < x_max; x++)
+		u32 *Pixel = (u32 *)PixelRow;
+		for(s32 X = XMin; X < XMax; ++X)
 		{
-			*pixel++ = color;
+			*Pixel++ = color;
 		}
-		pixel_row += AppBackBuffer->Stride;
+		PixelRow += AppBackBuffer->Stride;
 	}
 }
 
@@ -712,9 +711,9 @@ CameraUpdate(app_state *AppState, app_back_buffer *BackBuffer, camera *Camera, f
 	Camera->Yaw = NewYaw;
 	Camera->Pitch = NewPitch;
 
-	Camera->Direction.x = cosf(DegreeToRad(Camera->Yaw)) * cosf(DegreeToRad(Camera->Pitch));
-	Camera->Direction.y = sinf(DegreeToRad(Camera->Pitch));
-	Camera->Direction.z = sinf(DegreeToRad(Camera->Yaw)) * cosf(DegreeToRad(Camera->Pitch));
+	Camera->Direction.x = Cos(DegreeToRad(Camera->Yaw)) * Cos(DegreeToRad(Camera->Pitch));
+	Camera->Direction.y = Sin(DegreeToRad(Camera->Pitch));
+	Camera->Direction.z = Sin(DegreeToRad(Camera->Yaw)) * Cos(DegreeToRad(Camera->Pitch));
 
 	Camera->Direction = Normalize(Camera->Direction);
 }
@@ -813,7 +812,10 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 	app_keyboard_controller *KeyBoardController = &AppInput->KeyboardController;
 
 
+	// TODO(Justin): What do we update first? The camera's position or
+	// orientation. How does updating the orientation/position affect the other?
 	v3f ddP = {};
+	v3f Target = Camera->Pos + Camera->Direction;
 	if(KeyBoardController->W.EndedDown)
 	{
 		ddP += {0.0f, 0.0f, -1.0f * dt};
