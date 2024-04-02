@@ -52,6 +52,7 @@ struct aabb
 	interval Z;
 };
 
+
 struct rectangle
 {
 	v4f Min;
@@ -78,13 +79,7 @@ struct quad
 };
 
 
-struct edge
-{
-	f32 X;
-	f32 XStep;
-	s32 YStart;
-	s32 YEnd;
-};
+
 
 
 // TODO(Justin): FIgure out what to store.
@@ -98,21 +93,16 @@ struct camera
 	f32 Pitch;
 };
 
-struct loaded_obj
+// NOTE(Justin): When loading a model the members of a mesh that need to have
+// memory allocated to them are the members that are pointers. If we want to
+// load any model and any mesh we cannot specify how many there are because we
+// do not know ahead of time. Instead we can count how many there are when
+// processing the file contents. Once we have a count then we can allocate an
+// array. We would need to do this if we did not want to use a dynamic array
+// that can change size.
+
+struct mesh
 {
-	char *FileName;
-	u8 *Memory;
-	u32 Size;
-};
-
-struct mesh_attributes
-{
-	// TODO(Justin): Pull this out to a loaded_obj data structure
-	u8 *Memory;
-	u32 Size;
-
-	loaded_obj *Asset;
-
 	u32 *Indices;
 	v3f *Vertices;
 	v2f *TexCoords;
@@ -121,6 +111,7 @@ struct mesh_attributes
 	// NOTE(Justin): A face is, in this context, is defined as 3-tuple in the
 	// file as x/y/z. The format is {vertex position index} / {vertex texture
 	// index} / {vertex normal index}.
+
 	u32 *Faces;
 
 	u32 VertexCount;
@@ -132,13 +123,25 @@ struct mesh_attributes
 	u32 FaceIndexCount;
 };
 
+struct loaded_obj
+{
+	char *FileName;
+
+	u8 *Memory;
+	u32 Size;
+
+	mesh Mesh;
+};
+
 struct app_state
 {
 	memory_arena WorldArena;
 
 	loaded_obj Cube;
-	mesh_attributes CubeMesh;
-	mesh_attributes SuzanneMesh;
+	loaded_obj Suzanne;
+
+	mesh CubeMesh;
+	mesh SuzanneMesh;
 
 	camera Camera;
 	u32 CameraIndex;
