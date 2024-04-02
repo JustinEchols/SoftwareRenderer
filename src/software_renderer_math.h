@@ -134,6 +134,39 @@ struct mat4
 //
 
 inline f32
+Min3(f32 X, f32 Y, f32 Z)
+{
+	f32 Result = 0.0f;
+
+	f32 MinXY = Min(X, Y);
+	f32 MinXZ = Min(X, Z);
+
+	Result = Min(MinXY, MinXZ);
+
+	return(Result);
+}
+
+inline f32
+Max3(f32 X, f32 Y, f32 Z)
+{
+	f32 Result = 0.0f;
+
+	f32 MaxXY = Max(X, Y);
+	f32 MaxXZ = Max(X, Z);
+
+	Result = Max(MaxXY, MaxXZ);
+
+	return(Result);
+}
+
+inline f32
+Lerp(f32 A, f32 t, f32 B)
+{
+	f32 Result = (1.0f - t) * A + t * B;
+	return(Result);
+}
+
+inline f32
 Clamp(f32 A, f32 t, f32 B)
 {
 	f32 Result = t;
@@ -563,6 +596,35 @@ operator *(f32 c, v4f A)
 	Result.y = c * A.y;
 	Result.z = c * A.z;
 	Result.w = c * A.w;
+
+	return(Result);
+}
+
+inline v4f
+operator *(v4f A, f32 c)
+{
+	v4f Result = c * A;
+
+	return(Result);
+}
+
+inline v4f
+Lerp(v4f A, f32 t, v4f B)
+{
+	v4f Result = (1.0f - t) * A + t * B;
+
+	return(Result);
+}
+
+inline v4f
+Hadamard(v4f A, v4f B)
+{
+	v4f Result;
+
+	Result.x = A.x * B.x;
+	Result.y = A.y * B.y;
+	Result.z = A.z * B.z;
+	Result.w = A.w * B.w;
 
 	return(Result);
 }
