@@ -420,9 +420,11 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 				{
 					Barycentric = BarycentricV2(V0, V1, V2, P);
 				}
+
 				PixelSet(AppBackBuffer, P, Barycentric);
 			}
 		}
+		PixelRow += AppBackBuffer->Stride;
 	}
 }
 
