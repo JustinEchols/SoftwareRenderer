@@ -397,11 +397,11 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 	s32 XMax = F32RoundToS32(Max3(V0.x, V1.x, V2.x));
 	s32 YMax = F32RoundToS32(Max3(V0.y, V1.y, V2.y));
 
-	u8 *PixelRow = (u8 *)AppBackBuffer->Memory;
-	for(s32 Y = 0; Y < AppBackBuffer->Height; ++Y)
+	u8 *PixelRow = (u8 *)AppBackBuffer->Memory + YMin * AppBackBuffer->Stride + XMin * AppBackBuffer->BytesPerPixel;
+	for(s32 Y = YMin; Y < YMax; ++Y)
 	{
 		u32 *Pixel = (u32 *)PixelRow;
-		for(s32 X = 0; X < AppBackBuffer->Width; ++X)
+		for(s32 X = XMin; X < XMax; ++X)
 		{
 			v2f P = {(f32)X, (f32)Y};
 
