@@ -115,6 +115,81 @@ LineDDADraw(app_back_buffer *AppBackBuffer, v2f P1, v2f P2, v3f Color)
 	}
 }
 
+// NOTE(Justin): Unpack4x8?
+internal v4f
+UnpackU32ToV4F(u32 Packed)
+{
+	v4f Result =
+	{
+		(f32)((Packed >> 16) & 0xFF),
+		(f32)((Packed >> 8) & 0xFF),
+		(f32)((Packed >> 0) & 0xFF),
+		(f32)((Packed >> 24) & 0xFF)
+	};
+
+	return(Result);
+}
+
+internal void
+LineDDABilinearDraw(app_back_buffer *AppBackBuffer, v2f P1, v2f P2, v3f Color)
+{
+	v2f Diff = P2 - P1;
+
+	s32 dX = F32RoundToS32(Diff.x);
+	s32 dY = F32RoundToS32(Diff.y);
+
+	s32 PixelCount, PixelIndex;
+
+	if(ABS(dX) > ABS(dY))
+	{
+		PixelCount = ABS(dX);
+	}
+	else
+	{
+		PixelCount = ABS(dY);
+	}
+
+	v2f Increment = {(f32)dX / (f32)PixelCount, (f32)dY / (f32)PixelCount};
+	v2f PixelPos = P1;
+
+	PixelSet(AppBackBuffer, PixelPos, Color);
+	for(PixelIndex = 0; PixelIndex < PixelCount; PixelIndex++)
+	{
+		PixelPos += Increment;
+		s32 X = F32FloorToS32(PixelPos.x);
+		s32 Y = F32FloorToS32(PixelPos.y);
+
+		f32 tx = PixelPos.x - (f32)X;
+		f32 ty = PixelPos.y - (f32)Y;
+
+		u8 *PixelRow = (u8 *)AppBackBuffer->Memory + Y + X * sizeof(u32);
+
+		u32 *PixelA = (u32 *)PixelRow;
+		u32 *PixelB = (u32 *)(PixelRow + sizeof(u32));
+		u32 *PixelC = (u32 *)(PixelRow + AppBackBuffer->Stride);
+		u32 *PixelD = (u32 *)(PixelRow + AppBackBuffer->Stride + sizeof(u32));
+
+		v4f A = UnpackU32ToV4F(*PixelA);
+		v4f B = UnpackU32ToV4F(*PixelB);
+		v4f C = UnpackU32ToV4F(*PixelC);
+		v4f D = UnpackU32ToV4F(*PixelD);
+
+		v4f Interpolant1 = Lerp(A, tx, B);
+		v4f Interpolant2 = Lerp(C, tx, D);
+		v4f Interpolant = Lerp(Interpolant1, ty, Interpolant2);
+
+		v4f FinalColor = Hadamard(Interpolant, V4FCreateFromV3F(Color, 1.0f));
+
+		//u32 R = F32RoundToU32(255.0f * C.r);
+		//u32 G = F32RoundToU32(255.0f * C.g);
+		//u32 B = F32RoundToU32(255.0f * C.b);
+		//u32 A = F32RoundToU32(255.0f * C.a);
+
+		PixelSet(AppBackBuffer, PixelPos, FinalColor.rgb);
+
+	}
+}
+
 internal void
 CircleDraw(app_back_buffer *AppBackBuffer, circle Circle, v3f Color)
 {
@@ -233,30 +308,6 @@ AxisDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, v4f
 	LineDDADraw(AppBackBuffer, P.xy, PZ.xy, Color);
 }
 
-internal edge
-EdgeCreateFromV3f(v3f VertexMin, v3f VertexMax)
-{
-	edge Result;
-	Result.YStart = F32RoundToS32(VertexMin.y);
-	Result.YEnd = F32RoundToS32(VertexMax.y);
-
-	f32 YDist = VertexMax.y - VertexMin.y;
-	f32 XDist = VertexMax.x - VertexMin.x;
-
-	Result.XStep = (f32)XDist / (f32)YDist;
-
-	// Distance between real y and first scanline
-	f32 YPrestep = Result.YStart - VertexMin.y;
-
-	Result.X = VertexMin.x + YPrestep * Result.XStep;
-	return(Result);
-}
-
-internal void
-ScanlineDraw(app_back_buffer *AppBackBuffer, edge Left, edge Right, s32 ScanLine)
-{
-	s32 XMin = (s32)ceil(Left.X);
-}
 
 internal v3f
 Barycentric(v3f X, v3f Y, v3f Z, v3f P)
@@ -289,9 +340,13 @@ Barycentric(v3f X, v3f Y, v3f Z, v3f P)
 	return(Result);
 }
 
-// TODO(Justin): Clean this function up.
+internal v3f
+BarycentricV2(v3f X, v3f Y, v3f Z, v3f P)
+{
+}
+
 internal void
-TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, triangle *Triangle)
+TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, triangle *Triangle, v4f Color)
 {
 	triangle Fragment = {};
 	for(u32 Index = 0; Index < 3; Index++)
@@ -302,10 +357,10 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 
 	}
 
-	v3f Tmp = {};
-	v3f Min = Fragment.Vertices[0].xyz;
-	v3f Mid = Fragment.Vertices[1].xyz;
-	v3f Max = Fragment.Vertices[2].xyz;
+	v2f Tmp = {};
+	v2f Min = Fragment.Vertices[0].xy;
+	v2f Mid = Fragment.Vertices[1].xy;
+	v2f Max = Fragment.Vertices[2].xy;
 
 	if(Min.y > Max.y)
 	{
@@ -326,101 +381,33 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 		Mid = Tmp;
 	}
 
-	edge BottomToTop = EdgeCreateFromV3f(Min, Max);
-	edge MiddleToTop = EdgeCreateFromV3f(Mid, Max);
-	edge BottomToMiddle = EdgeCreateFromV3f(Min, Mid);
+	s32 XMin = F32RoundToS32(Min3(Min.x, Mid.x, Max.x));
+	s32 YMin = F32RoundToS32(Min3(Min.y, Mid.y, Max.y));
 
-	v2f V0 = Min.xy - Max.xy;
-	v2f V1 = Mid.xy - Max.xy;
+	s32 XMax = F32RoundToS32(Max3(Min.x, Mid.x, Max.x));
+	s32 YMax = F32RoundToS32(Max3(Min.y, Mid.y, Max.y));
 
-	f32 AreaDoubleSigned = Det(V0, V1);
-
-	b32 OrientedRight;
-	if(AreaDoubleSigned > 0)
+	u8 *PixelRow = (u8 *)AppBackBuffer->Memory;
+	for(s32 Y = 0; Y < AppBackBuffer->Height; ++Y)
 	{
-		// BottomToTop is on the left
-		// Two edges on the right
-		OrientedRight = true;
-	}
-	else
-	{
-		// BottomToTop is on the right 
-		// Two edges on the left 
-		OrientedRight = false;
-	}
-
-	edge Left = BottomToTop;
-	edge Right = BottomToMiddle;
-	if(!OrientedRight)
-	{
-		edge Temp = Left;
-		Left = Right;
-		Right = Temp;
-	}
-
-	int YStart = BottomToMiddle.YStart;
-	int YEnd = BottomToMiddle.YEnd;
-
-	v3f P = Min;
-
-	v3f Color = {};
-	for(int j = YStart; j < YEnd; j++)
-	{
-		// For each scanline
-		P.x = Left.X;
-		int XStart = F32RoundToS32(Left.X);
-		int XEnd = F32RoundToS32(Right.X);
-		for(int i = XStart; i < XEnd; i++)
+		u32 *Pixel = (u32 *)PixelRow;
+		for(s32 X = 0; X < AppBackBuffer->Width; ++X)
 		{
-			// Get the barycentric cood. for each P in the scanline 
-			// and set the corresponding pixel. 
-			
-			Color = Barycentric(Min, Max, Mid, P);
-			PixelSet(AppBackBuffer, P.xy, Color);
-			P.x++;
+			v2f P = {(f32)X, (f32)Y};
+
+			f32 E01 = Det((Mid - Min), (P - Min));
+			f32 E12 = Det((Max - Mid), (P - Mid));
+			f32 E20 = Det((Min - Max), (P - Max));
+
+			if((E01 > 0) && (E12 > 0) && (E20 > 0))
+			{
+				PixelSet(AppBackBuffer, P, Color.rgb);
+			}
 		}
-		// Increment Left and Right to proper x -values of next scanline.
-		// Increment point P y - value to next scanline.
-		Left.X += Left.XStep;
-		Right.X += Right.XStep;
-		P.y++;
-	}
-
-	Left = BottomToTop;
-	Right = MiddleToTop;
-
-	// Offset the starting x value so that it is at the
-	// correct x value to render the top half of the triangle
-	Left.X += (MiddleToTop.YStart - BottomToTop.YStart) * Left.XStep;
-
-	if(!OrientedRight)
-	{
-		edge Temp = Left;
-		Left = Right;
-		Right = Temp;
-	}
-
-	YStart = MiddleToTop.YStart;
-	YEnd = MiddleToTop.YEnd;
-
-	//P = Min;
-	P.y = (f32)YStart;
-	for(int j = YStart; j < YEnd; j++)
-	{
-		P.x = Left.X;
-		int XStart = F32RoundToS32(Left.X);
-		int XEnd = F32RoundToS32(Right.X);
-		for(int i = XStart; i < XEnd; i++)
-		{
-			Color = Barycentric(Min, Max, Mid, P);
-			PixelSet(AppBackBuffer, P.xy, Color);
-			P.x++;
-		}
-		Left.X += Left.XStep;
-		Right.X += Right.XStep;
-		P.y++;
 	}
 }
+
+
 
 internal void
 GridDraw(app_back_buffer *BackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, v4f P)
@@ -526,11 +513,12 @@ ParseV2VertexAttribute(u8 *Data, v2f *AttributeArray, u32 Count, u32 FloatCount)
 	}
 }
 
-internal mesh_attributes
+internal loaded_obj
 DEBUGObjReadEntireFile(thread_context *Thread, char *FileName, memory_arena *Arena,
 		debug_platform_file_read_entire_func *DEBUGPlatformReadEntireFile)
 {
-	mesh_attributes Result = {};
+	loaded_obj Result = {};
+
 	debug_file_read_result ObjFile = DEBUGPlatformReadEntireFile(Thread, FileName);
 	if(ObjFile.Size != 0)
 	{
@@ -560,6 +548,7 @@ DEBUGObjReadEntireFile(thread_context *Thread, char *FileName, memory_arena *Are
 		u32 FilePosition = 0;
 
 		u8 *Content = Result.Memory;
+		mesh *Mesh = &Result.Mesh;
 		while(*Content++)
 		{
 			char Current = *Content;
@@ -576,7 +565,7 @@ DEBUGObjReadEntireFile(thread_context *Thread, char *FileName, memory_arena *Are
 				{
 					FirstVertexOffset = FilePosition + 3;
 				}
-				Result.VertexCount++;
+				Mesh->VertexCount++;
 			}
 
 			if((Current == t) && (Next == Space))
@@ -585,7 +574,7 @@ DEBUGObjReadEntireFile(thread_context *Thread, char *FileName, memory_arena *Are
 				{
 					FirstTextureOffset = FilePosition + 4;
 				}
-				Result.TexCoordCount++;
+				Mesh->TexCoordCount++;
 			}
 
 			if((Current == n) && (Next == Space))
@@ -594,7 +583,7 @@ DEBUGObjReadEntireFile(thread_context *Thread, char *FileName, memory_arena *Are
 				{
 					FirstNormalOffset = FilePosition + 4;
 				}
-				Result.NormalCount++;
+				Mesh->NormalCount++;
 			}
 
 			if((Current == f) && (Next == Space))
@@ -609,30 +598,30 @@ DEBUGObjReadEntireFile(thread_context *Thread, char *FileName, memory_arena *Are
 		}
 
 		FaceCount = FaceRows * 3 * 4;
-		Result.FaceCount = FaceCount;
+		Mesh->FaceCount = FaceCount;
 
-		Result.Vertices = PushArray(Arena, Result.VertexCount, v3f);
-		Result.TexCoords = PushArray(Arena, Result.TexCoordCount, v2f);
-		Result.Normals = PushArray(Arena, Result.NormalCount, v3f);
-		Result.Faces = PushArray(Arena, Result.FaceCount, u32);
+		Mesh->Vertices = PushArray(Arena, Mesh->VertexCount, v3f);
+		Mesh->TexCoords = PushArray(Arena, Mesh->TexCoordCount, v2f);
+		Mesh->Normals = PushArray(Arena, Mesh->NormalCount, v3f);
+		Mesh->Faces = PushArray(Arena, Mesh->FaceCount, u32);
 
 		Content = Result.Memory;
 		Content += FirstVertexOffset;
 
 		u8 *VertexData =  Content;
-		ParseV3VertexAttribute(VertexData, Result.Vertices, Result.VertexCount, 3);
+		ParseV3VertexAttribute(VertexData, Mesh->Vertices, Mesh->VertexCount, 3);
 
 		Content = Result.Memory;
 		Content += FirstTextureOffset;
 
 		u8 *TextureData = Content;
-		ParseV2VertexAttribute(TextureData, Result.TexCoords, Result.TexCoordCount, 2);
+		ParseV2VertexAttribute(TextureData, Mesh->TexCoords, Mesh->TexCoordCount, 2);
 
 		Content = Result.Memory;
 		Content += FirstNormalOffset;
 
 		u8 *NormalData = Content;
-		ParseV3VertexAttribute(NormalData, Result.Normals, Result.NormalCount, 3);
+		ParseV3VertexAttribute(NormalData, Mesh->Normals, Mesh->NormalCount, 3);
 
 		Content = Result.Memory;
 		Content += FirstFaceOffset;
@@ -653,7 +642,7 @@ DEBUGObjReadEntireFile(thread_context *Thread, char *FileName, memory_arena *Are
 
 			if(Updated)
 			{
-				Result.Faces[FaceIndex++] = Num;
+				Mesh->Faces[FaceIndex++] = Num;
 			}
 
 			while(*C && !CharIsNum(*C))
@@ -665,23 +654,6 @@ DEBUGObjReadEntireFile(thread_context *Thread, char *FileName, memory_arena *Are
 
 	return(Result);
 }
-
-#if 0
-internal loaded_obj
-DEBUGModelLoad(thread_context *Thread, debug_platform_file_read_entire_func *FileReadEntire, char *FileName)
-{
-	loaded_obj Result = {};
-	debug_file_read_result FileReadResult = FileReadEntire(Thread, FileName);
-
-	if(FileReadResult.Size > 0)
-	{
-		Result.Memory = (u8 *)FileReadResult.Memory;
-		Result.Size = FileReadResult.Size;
-	}
-
-	return(Result);
-}
-#endif
 
 internal void
 CameraUpdate(app_state *AppState, app_back_buffer *BackBuffer, camera *Camera, f32 dMouseX, f32 dMouseY, f32 dt)
@@ -708,7 +680,7 @@ CameraUpdate(app_state *AppState, app_back_buffer *BackBuffer, camera *Camera, f
 }
 
 internal void
-MeshVertexPositionsDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh_attributes *Mesh)
+MeshVertexPositionsDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh *Mesh)
 {
 	v2f Dim = V2F(1.0f);
 	for(u32 Index = 0; Index < Mesh->VertexCount; ++Index)
@@ -724,7 +696,7 @@ MeshVertexPositionsDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4S
 }
 
 internal void
-CubeWireFrameDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh_attributes *CubeMesh)
+CubeWireFrameDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh *CubeMesh)
 {
 	v2f Dim = V2F(1.0f);
 	for(u32 Index = 0; Index < CubeMesh->VertexCount; ++Index)
@@ -757,16 +729,16 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		ArenaInitialize(&AppState->WorldArena, AppMemory->PermanentStorageSize - sizeof(app_state),
 										 (u8 *)AppMemory->PermanentStorage + sizeof(app_state));
 
-		AppState->CubeMesh = DEBUGObjReadEntireFile(Thread,  "models/cube.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
-		AppState->SuzanneMesh = DEBUGObjReadEntireFile(Thread,  "models/suzanne.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
+		AppState->Cube = DEBUGObjReadEntireFile(Thread,  "models/cube.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
+		AppState->Suzanne = DEBUGObjReadEntireFile(Thread,  "models/suzanne.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
 
 		camera *Camera = &AppState->Camera;
 		Camera->Pos = {0.0f, 0.0f, 3.0f};
 		Camera->Yaw = -90.0f;
 		Camera->Pitch = 0.0f;
-		Camera->Direction.x = cosf(DegreeToRad(Camera->Yaw)) * cosf(DegreeToRad(Camera->Pitch));
-		Camera->Direction.y = sinf(DegreeToRad(Camera->Pitch));
-		Camera->Direction.z = sinf(DegreeToRad(Camera->Yaw)) * cosf(DegreeToRad(Camera->Pitch));
+		Camera->Direction.x = Cos(DegreeToRad(Camera->Yaw)) * Cos(DegreeToRad(Camera->Pitch));
+		Camera->Direction.y = Sin(DegreeToRad(Camera->Pitch));
+		Camera->Direction.z = Sin(DegreeToRad(Camera->Yaw)) * Cos(DegreeToRad(Camera->Pitch));
 
 		AppState->MapToCamera = Mat4CameraMap(Camera->Pos, Camera->Pos + Camera->Direction);
 		AppState->CameraIndex = 0;
@@ -854,14 +826,33 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 	//
 
 	// Background
-	u32 *pixel = (u32 *)AppBackBuffer->Memory;
-	for(s32 y = 0; y < AppBackBuffer->Height; y++)
+	u32 *Pixel = (u32 *)AppBackBuffer->Memory;
+	for(s32 Y = 0; Y < AppBackBuffer->Height; Y++)
 	{
-		for(s32 x = 0; x < AppBackBuffer->Width; x++)
+		for(s32 X = 0; X < AppBackBuffer->Width; X++)
 		{
-			*pixel++ = 0;
+			*Pixel++ = 0;
 		}
 	}
 
-	MeshVertexPositionsDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, &AppState->SuzanneMesh);
+	triangle *T = &AppState->Triangle;
+	mat4 YRotation = Mat4YRotation(dt);
+
+	for(u32 Index = 0; Index < 3; ++Index)
+	{
+		T->Vertices[Index] = YRotation * T->Vertices[Index];
+	}
+	TriangleDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, T, V4F(1.0f, 0.0f, 0.0f, 1.0f));
+#if 0
+
+	loaded_obj *Model = &AppState->Suzanne;
+	mesh *Mesh = &Model->Mesh;
+	for(u32 Index = 0; Index < Mesh->VertexCount; ++Index)
+	{
+		Mesh->Vertices[Index] = YRotation * Mesh->Vertices[Index];
+	}
+
+
+	MeshVertexPositionsDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, Mesh);
+#endif
 }
