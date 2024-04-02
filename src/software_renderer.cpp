@@ -66,8 +66,8 @@ ColorConvertV3fToU32(v3f Color)
 internal void
 PixelSet(app_back_buffer *AppBackBuffer, v2f PixelPos, v3f Color)
 {
-	int X = (int)(PixelPos.x + 0.5f);
-	int Y = (int)(PixelPos.y + 0.5f);
+	s32 X = F32RoundToS32(PixelPos.x);
+	s32 Y = F32RoundToS32(PixelPos.y);
 
 	if((X < 0) || (X >= AppBackBuffer->Width))
 	{
@@ -326,12 +326,12 @@ Barycentric(v3f X, v3f Y, v3f Z, v3f P)
 	v3f Gamma = {};
 
 	Beta = (Dot(E2, E2) * E1 - Dot(E1, E2) * E2); 
-	f32 c_beta = 1.0f / (Dot(E1, E1) * Dot(E2, E2) - SQUARE(Dot(E1, E2)));
-	Beta = c_beta * Beta; 
+	f32 CBeta = 1.0f / (Dot(E1, E1) * Dot(E2, E2) - SQUARE(Dot(E1, E2)));
+	Beta = CBeta * Beta; 
 
 	Gamma = (Dot(E1, E1) * E2 - Dot(E1, E2) * E1); 
-	f32 c_gamma = 1.0f / (Dot(E1, E1) * Dot(E2, E2) - SQUARE(Dot(E1, E2)));
-	Gamma = c_gamma * Gamma;
+	f32 CGamma = 1.0f / (Dot(E1, E1) * Dot(E2, E2) - SQUARE(Dot(E1, E2)));
+	Gamma = CGamma * Gamma;
 
 	Result.x = Dot(Beta, F);
 	Result.y = Dot(Gamma, F);
@@ -341,8 +341,26 @@ Barycentric(v3f X, v3f Y, v3f Z, v3f P)
 }
 
 internal v3f
-BarycentricV2(v3f X, v3f Y, v3f Z, v3f P)
+BarycentricV2(v2f V0, v2f V1, v2f V2, v2f P)
 {
+	v3f Result = {};
+
+	f32 SignedDoubleArea = Det(V1 - V0, V2 - V0);
+
+	if(SignedDoubleArea != 0.0f)
+	{
+		f32 E01 = Det((V1 - V0), (P - V0));
+		f32 E12 = Det((V2 - V1), (P - V1));
+		f32 E20 = Det((V0 - V2), (P - V2));
+
+		f32 C1 = E01 / SignedDoubleArea;
+		f32 C2 = E12 / SignedDoubleArea;
+		f32 C3 = E20 / SignedDoubleArea;
+
+		Result = V3F(C1, C2, C3);
+	}
+
+	return(Result);
 }
 
 internal void
@@ -358,34 +376,26 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 	}
 
 	v2f Tmp = {};
-	v2f Min = Fragment.Vertices[0].xy;
-	v2f Mid = Fragment.Vertices[1].xy;
-	v2f Max = Fragment.Vertices[2].xy;
+	v2f V0 = Fragment.Vertices[0].xy;
+	v2f V1 = Fragment.Vertices[1].xy;
+	v2f V2 = Fragment.Vertices[2].xy;
 
-	if(Min.y > Max.y)
+	v2f X = V1 - V0;
+	v2f Y = V2 - V0;
+	f32 SignedDoubleArea = Det(X, Y);
+	b32 Swapped = false;
+	if(SignedDoubleArea < 0)
 	{
-		Tmp = Min;
-		Min = Max;
-		Max = Tmp;
-	}
-	if(Mid.y >  Max.y)
-	{
-		Tmp = Mid;
-		Mid = Max;
-		Max = Tmp;
-	}
-	if(Min.y > Mid.y)
-	{
-		Tmp = Min;
-		Min = Mid;
-		Mid = Tmp;
+		Tmp = V1;
+		V1 = V2;
+		V2 = Tmp;
+		Swapped = true;
 	}
 
-	s32 XMin = F32RoundToS32(Min3(Min.x, Mid.x, Max.x));
-	s32 YMin = F32RoundToS32(Min3(Min.y, Mid.y, Max.y));
-
-	s32 XMax = F32RoundToS32(Max3(Min.x, Mid.x, Max.x));
-	s32 YMax = F32RoundToS32(Max3(Min.y, Mid.y, Max.y));
+	s32 XMin = F32RoundToS32(Min3(V0.x, V1.x, V2.x));
+	s32 YMin = F32RoundToS32(Min3(V0.y, V1.y, V2.y));
+	s32 XMax = F32RoundToS32(Max3(V0.x, V1.x, V2.x));
+	s32 YMax = F32RoundToS32(Max3(V0.y, V1.y, V2.y));
 
 	u8 *PixelRow = (u8 *)AppBackBuffer->Memory;
 	for(s32 Y = 0; Y < AppBackBuffer->Height; ++Y)
@@ -395,13 +405,22 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 		{
 			v2f P = {(f32)X, (f32)Y};
 
-			f32 E01 = Det((Mid - Min), (P - Min));
-			f32 E12 = Det((Max - Mid), (P - Mid));
-			f32 E20 = Det((Min - Max), (P - Max));
+			f32 E01 = Det((V1 - V0), (P - V0));
+			f32 E12 = Det((V2 - V1), (P - V1));
+			f32 E20 = Det((V0 - V2), (P - V2));
 
 			if((E01 > 0) && (E12 > 0) && (E20 > 0))
 			{
-				PixelSet(AppBackBuffer, P, Color.rgb);
+				v3f Barycentric = {};
+				if(Swapped)
+				{
+					Barycentric = BarycentricV2(V0, V2, V1, P);
+				}
+				else
+				{
+					Barycentric = BarycentricV2(V0, V1, V2, P);
+				}
+				PixelSet(AppBackBuffer, P, Barycentric);
 			}
 		}
 	}
@@ -672,9 +691,9 @@ CameraUpdate(app_state *AppState, app_back_buffer *BackBuffer, camera *Camera, f
 	Camera->Yaw = NewYaw;
 	Camera->Pitch = NewPitch;
 
-	Camera->Direction.x = Cos(DegreeToRad(Camera->Yaw)) * Cos(DegreeToRad(Camera->Pitch));
-	Camera->Direction.y = Sin(DegreeToRad(Camera->Pitch));
-	Camera->Direction.z = Sin(DegreeToRad(Camera->Yaw)) * Cos(DegreeToRad(Camera->Pitch));
+	Camera->Direction.x = Cos(DEGREE_TO_RAD(Camera->Yaw)) * Cos(DEGREE_TO_RAD(Camera->Pitch));
+	Camera->Direction.y = Sin(DEGREE_TO_RAD(Camera->Pitch));
+	Camera->Direction.z = Sin(DEGREE_TO_RAD(Camera->Yaw)) * Cos(DEGREE_TO_RAD(Camera->Pitch));
 
 	Camera->Direction = Normalize(Camera->Direction);
 }
@@ -736,14 +755,14 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		Camera->Pos = {0.0f, 0.0f, 3.0f};
 		Camera->Yaw = -90.0f;
 		Camera->Pitch = 0.0f;
-		Camera->Direction.x = Cos(DegreeToRad(Camera->Yaw)) * Cos(DegreeToRad(Camera->Pitch));
-		Camera->Direction.y = Sin(DegreeToRad(Camera->Pitch));
-		Camera->Direction.z = Sin(DegreeToRad(Camera->Yaw)) * Cos(DegreeToRad(Camera->Pitch));
+		Camera->Direction.x = Cos(DEGREE_TO_RAD(Camera->Yaw)) * Cos(DEGREE_TO_RAD(Camera->Pitch));
+		Camera->Direction.y = Sin(DEGREE_TO_RAD(Camera->Pitch));
+		Camera->Direction.z = Sin(DEGREE_TO_RAD(Camera->Yaw)) * Cos(DEGREE_TO_RAD(Camera->Pitch));
 
 		AppState->MapToCamera = Mat4CameraMap(Camera->Pos, Camera->Pos + Camera->Direction);
 		AppState->CameraIndex = 0;
 
-		f32 FOV = DegreeToRad(45.0f);
+		f32 FOV = DEGREE_TO_RAD(45.0f);
 		f32 AspectRatio = (f32)AppBackBuffer->Width / (f32)AppBackBuffer->Height;
 		f32 ZNear = 0.1f;
 		f32 ZFar = 100.0f;
