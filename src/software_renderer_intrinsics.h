@@ -39,6 +39,13 @@ F32TruncateToU32(f32 X)
 	return(Result);
 }
 
+inline s32
+F32FloorToS32(f32 X)
+{
+	s32 Result = (s32)floorf(X);
+	return(Result);
+}
+
 inline f32
 Sqrt(f32 X)
 {
@@ -64,6 +71,20 @@ inline f32
 Tan(f32 Angle)
 {
 	f32 Result = tanf(Angle);
+	return(Result);
+}
+
+inline f32
+Min(f32 X, f32 Y)
+{
+	f32 Result = fminf(X, Y);
+	return(Result);
+}
+
+inline f32
+Max(f32 X, f32 Y)
+{
+	f32 Result = fmaxf(X, Y);
 	return(Result);
 }
 
