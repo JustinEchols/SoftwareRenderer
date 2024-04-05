@@ -957,26 +957,6 @@ MeshDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mes
 	}
 }
 
-internal void
-CubeWireFrameDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh *CubeMesh)
-{
-	v2f Dim = V2F(1.0f);
-	for(u32 Index = 0; Index < CubeMesh->VertexCount; ++Index)
-	{
-		v4f Vertex0 = V4FCreateFromV3F(CubeMesh->Vertices[Index], 1.0f);
-		v4f Vertex1 = V4FCreateFromV3F(CubeMesh->Vertices[(Index + 1) % CubeMesh->VertexCount], 1.0f);
-
-		Vertex0 = Mat4MVP * Vertex0;
-		Vertex1 = Mat4MVP * Vertex1;
-		Vertex0 = (1.0f / Vertex0.w) * Vertex0;
-		Vertex1 = (1.0f / Vertex1.w) * Vertex1;
-		Vertex0 = Mat4ScreenSpace * Vertex0;
-		Vertex1 = Mat4ScreenSpace * Vertex1;
-
-		LineDDADraw(AppBackBuffer, Vertex0.xy, Vertex1.xy, V3F(1.0f));
-	}
-}
-
 extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 {
 	app_state *AppState = (app_state *)AppMemory->PermanentStorage;
