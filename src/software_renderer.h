@@ -68,8 +68,8 @@ struct circle
 struct triangle
 {
 	v4f Pos;
-	v3f Color;
 	v4f Vertices[3];
+	v3f Colors[3];
 };
 
 struct quad
@@ -86,8 +86,10 @@ struct quad
 struct camera
 {
 	v3f Pos;
-	v3f Direction;
+
+	v3f Right;
 	v3f Up;
+	v3f Direction;
 
 	f32 Yaw;
 	f32 Pitch;
@@ -119,8 +121,14 @@ struct mesh
 	u32 NormalCount;
 	u32 FaceCount;
 
+	// NOTE(Justin): Usually 3. Not necessary to store.
+	//
+	// WARNING(Justin): Tried hardcoding FaceStride to 3 and it broke the
+	// loading code. The mesh struct contained garbage values in it after
+	// setting the hardcoded value in the struct. I removed the hardcoded value
+	// and checked the mesh struct again. Everythin was initalized to 0s.
 	u32 FaceStride;
-	u32 FaceIndexCount;
+	u32 IndicesCount;
 };
 
 struct loaded_obj
@@ -133,9 +141,22 @@ struct loaded_obj
 	mesh Mesh;
 };
 
+struct loaded_bitmap
+{
+
+	u8 *Memory;
+
+	u32 Width;
+	u32 Height;
+	u32 Stride;
+};
+
+
 struct app_state
 {
 	memory_arena WorldArena;
+
+	loaded_bitmap Test;
 
 	loaded_obj Cube;
 	loaded_obj Suzanne;

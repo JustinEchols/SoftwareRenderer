@@ -25,23 +25,6 @@ V4fRandInit()
 }
 
 internal triangle
-TriangleRandInit()
-{
-	triangle Result = {};
-
-	Result.Pos = V4fRandInit();
-
-	for(u32 i = 0; i < 4; i++)
-	{
-		Result.Vertices[i] = V4fRandInit();
-	}
-
-	Result.Color = ColorRandInit();
-
-	return(Result);
-}
-
-internal triangle
 TriangleInit(v4f Pos, v4f Vertices[3])
 {
 	triangle Result = {};
@@ -429,7 +412,7 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 }
 
 internal void
-TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, triangle *Triangle, v4f Color)
+TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, triangle *Triangle)
 {
 	triangle Fragment = {};
 	for(u32 Index = 0; Index < 3; Index++)
@@ -484,7 +467,10 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 					Barycentric = BarycentricV2(V0, V1, V2, P);
 				}
 
-				PixelSet(AppBackBuffer, P, Barycentric);
+				v3f Color = Barycentric.x * Triangle->Colors[0] +
+							Barycentric.y * Triangle->Colors[1] +
+							Barycentric.z * Triangle->Colors[2];
+				PixelSet(AppBackBuffer, P, Color);
 			}
 		}
 	}
@@ -998,11 +984,9 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		AppState->Triangle.Vertices[1] = V4F(0.0f, 0.0f, 0.0f, 1.0f);
 		AppState->Triangle.Vertices[2] = V4F(0.5f, -0.5f, 0.0f, 1.0f);
 
-		AppState->Quad.Pos = V4F(10.0f, 0.0f, -2.0f, 1.0f);
-		AppState->Quad.Vertices[0] = V4F(1.0f, 0.0f, 0.0f, 1.0f);
-		AppState->Quad.Vertices[1] = V4F(1.0f, 1.0f, 0.0f, 1.0f);
-		AppState->Quad.Vertices[2] = V4F(-1.0f, 1.0f, 0.0f, 1.0f);
-		AppState->Quad.Vertices[3] = V4F(-1.0f, 0.0f, 0.0f, 1.0f);
+		AppState->Triangle.Colors[0] = V3F(1.0f, 0.0f, 0.0f);
+		AppState->Triangle.Colors[1] = V3F(0.0f, 1.0f, 0.0f);
+		AppState->Triangle.Colors[2] = V3F(0.0f, 0.0f, 1.0f);
 
 		AppMemory->IsInitialized = true;
 	}
@@ -1066,11 +1050,17 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		}
 	}
 
-
 	mat4 XRotation = Mat4Identity();
 	mat4 YRotation = Mat4YRotation(dt);
 	mat4 ZRotation = Mat4Identity();
 	mat4 R = ZRotation * YRotation * XRotation;
+	triangle *T = &AppState->Triangle;
+	T->Colors[0] = V3F(1.0f, 1.0f, 0.0f);
+	T->Colors[1] = V3F(1.0f, 0.0f, 1.0f);
+	T->Colors[2] = V3F(0.0f, 1.0f, 0.0f);
+	TriangleDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, T);
+#if 0
+
 
 	loaded_obj *Model = &AppState->Cube;
 	mesh *Mesh = &Model->Mesh;
@@ -1080,4 +1070,5 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 	}
 	MeshDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, Mesh);
 	//MeshWireFrameDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, Mesh);
+#endif
 }
