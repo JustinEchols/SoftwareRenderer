@@ -364,6 +364,71 @@ BarycentricV2(v2f V0, v2f V1, v2f V2, v2f P)
 }
 
 internal void
+TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, v4f A, v4f B, v4f C)
+{
+	A = Mat4MVP * A;
+	A = (1.0f / A.w) * A;
+	A = Mat4ScreenSpace * A;
+
+	B = Mat4MVP * B;
+	B = (1.0f / B.w) * B;
+	B = Mat4ScreenSpace * B;
+
+	C = Mat4MVP * C;
+	C = (1.0f / C.w) * C;
+	C = Mat4ScreenSpace * C;
+
+	v2f Tmp = {};
+	v2f V0 = A.xy;
+	v2f V1 = B.xy;
+	v2f V2 = C.xy;
+
+	v2f X = V1 - V0;
+	v2f Y = V2 - V0;
+	f32 SignedDoubleArea = Det(X, Y);
+	b32 Swapped = false;
+	if(SignedDoubleArea < 0)
+	{
+		Tmp = V1;
+		V1 = V2;
+		V2 = Tmp;
+		Swapped = true;
+	}
+
+	s32 XMin = F32RoundToS32(Min3(V0.x, V1.x, V2.x));
+	s32 YMin = F32RoundToS32(Min3(V0.y, V1.y, V2.y));
+	s32 XMax = F32RoundToS32(Max3(V0.x, V1.x, V2.x));
+	s32 YMax = F32RoundToS32(Max3(V0.y, V1.y, V2.y));
+
+	for(s32 Y = YMin; Y < YMax; ++Y)
+	{
+		for(s32 X = XMin; X < XMax; ++X)
+		{
+			v2f P = {(f32)X, (f32)Y};
+
+			f32 E01 = Det((V1 - V0), (P - V0));
+			f32 E12 = Det((V2 - V1), (P - V1));
+			f32 E20 = Det((V0 - V2), (P - V2));
+
+			if((E01 > 0) && (E12 > 0) && (E20 > 0))
+			{
+				v3f Barycentric = {};
+				if(Swapped)
+				{
+					Barycentric = BarycentricV2(V0, V2, V1, P);
+				}
+				else
+				{
+					Barycentric = BarycentricV2(V0, V1, V2, P);
+				}
+
+				PixelSet(AppBackBuffer, P, Barycentric);
+			}
+		}
+	}
+}
+
+internal void
 TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, triangle *Triangle, v4f Color)
 {
 	triangle Fragment = {};
@@ -397,10 +462,8 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 	s32 XMax = F32RoundToS32(Max3(V0.x, V1.x, V2.x));
 	s32 YMax = F32RoundToS32(Max3(V0.y, V1.y, V2.y));
 
-	u8 *PixelRow = (u8 *)AppBackBuffer->Memory + YMin * AppBackBuffer->Stride + XMin * AppBackBuffer->BytesPerPixel;
 	for(s32 Y = YMin; Y < YMax; ++Y)
 	{
-		u32 *Pixel = (u32 *)PixelRow;
 		for(s32 X = XMin; X < XMax; ++X)
 		{
 			v2f P = {(f32)X, (f32)Y};
@@ -424,7 +487,6 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 				PixelSet(AppBackBuffer, P, Barycentric);
 			}
 		}
-		PixelRow += AppBackBuffer->Stride;
 	}
 }
 
@@ -565,6 +627,7 @@ DEBUGObjReadEntireFile(thread_context *Thread, char *FileName, memory_arena *Are
 		u32 FirstFaceOffset = 0;
 
 		u32 FaceRows = 0;
+		u32 FaceCols = 0;
 
 		u32 FilePosition = 0;
 
@@ -613,12 +676,28 @@ DEBUGObjReadEntireFile(thread_context *Thread, char *FileName, memory_arena *Are
 				{
 					FirstFaceOffset = FilePosition + 3;
 				}
+
+				if(FaceRows == 0)
+				{
+					// NOTE(Justin): To find the number of FaceCols count the number of
+					// spaces in the first face row.
+					for(char *C = (char *)Content; *C != '\n'; C++)
+					{
+						if(*C == Space)
+						{
+							FaceCols++; 
+						}
+					}
+
+				}
+
 				FaceRows++;
 			}
+
 			FilePosition++;
 		}
 
-		FaceCount = FaceRows * 3 * 4;
+		FaceCount = 3 * FaceRows * FaceCols;
 		Mesh->FaceCount = FaceCount;
 
 		Mesh->Vertices = PushArray(Arena, Mesh->VertexCount, v3f);
@@ -671,9 +750,109 @@ DEBUGObjReadEntireFile(thread_context *Thread, char *FileName, memory_arena *Are
 				C++;
 			}
 		}
+
+		Mesh->IndicesCount = Mesh->FaceCount / 3;
+		Mesh->Indices = PushArray(Arena, Mesh->IndicesCount, u32);
+		for(u32 Index = 0; Index < Mesh->IndicesCount; ++Index)
+		{
+			u32 VertexIndex = Mesh->Faces[3 * Index] - 1;
+			ASSERT(VertexIndex < UINT_MAX);
+			Mesh->Indices[Index] = VertexIndex;
+		}
+	}
+
+
+	return(Result);
+}
+
+// NOTE(Justin): BMP file format specification: https://www.fileformat.info/format/bmp/egff.htm
+
+#pragma pack(push, 1)
+struct bitmap_header
+{
+	u16 FileType;     /* File type, always 4D42h ("BM") */
+	u32 FileSize;     /* Size of the file in bytes */
+	u16 Reserved1;    /* Always 0 */
+	u16 Reserved2;    /* Always 0 */
+	u32 BitmapOffset; /* Starting position of image data in bytes */
+
+	u32 Size;            /* Size of this header in bytes */
+	s32  Width;           /* Image width in pixels */
+	s32  Height;          /* Image height in pixels */
+	u16  Planes;          /* Number of color planes */
+	u16  BitsPerPixel;    /* Number of bits per pixel */
+	/* Fields added for Windows 3.x follow this line */
+	u32 Compression;     /* Compression methods used */
+	u32 SizeOfBitmap;    /* Size of bitmap in bytes */
+	s32  HorzResolution;  /* Horizontal resolution in pixels per meter */
+	s32  VertResolution;  /* Vertical resolution in pixels per meter */
+	u32 ColorsUsed;      /* Number of colors in the image */
+	u32 ColorsImportant; /* Minimum number of important colors */
+};
+#pragma pack(pop)
+
+
+#define BITMAP_BYTES_PER_PIXEL 4
+internal loaded_bitmap
+DEBUGBitmapReadEntireFile(thread_context *Thread, char *FileName, debug_platform_file_read_entire_func *DEBUGPlatformReadEntireFile)
+{
+	loaded_bitmap Result = {};
+	debug_file_read_result File = DEBUGPlatformReadEntireFile(Thread, FileName);
+	if(File.Size != 0)
+	{
+		bitmap_header *Header = (bitmap_header *)File.Memory;
+
+		u8 *PixelData = ((u8 *)File.Memory + Header->BitmapOffset);
+
+		Result.Width = Header->Width;
+		Result.Height = Header->Height;
+		Result.Stride = BITMAP_BYTES_PER_PIXEL * Header->Width;
+		Result.Memory = PixelData;
 	}
 
 	return(Result);
+}
+
+internal void
+BitmapDraw(app_back_buffer *AppBackBuffer, loaded_bitmap *Bitmap, v2f P)
+{
+	s32 XMin = F32RoundToS32(P.x);
+	s32 YMin = F32RoundToS32(P.y);
+	s32 XMax = F32RoundToS32(P.x + (f32)Bitmap->Width);
+	s32 YMax = F32RoundToS32(P.y + (f32)Bitmap->Height);
+
+	if(XMin < 0)
+	{
+		XMin = 0;
+	}
+	if(XMax > AppBackBuffer->Width)
+	{
+		XMax = AppBackBuffer->Width;
+	}
+	if(YMin < 0)
+	{
+		YMin = 0;
+	}
+	if(YMax > AppBackBuffer->Height)
+	{
+		YMax = AppBackBuffer->Height;
+	}
+
+	u8 *DestRow = (u8 *)AppBackBuffer->Memory + YMin * AppBackBuffer->Stride + XMin * BITMAP_BYTES_PER_PIXEL;
+	u8 *SrcRow = (u8 *)Bitmap->Memory;
+
+	for(s32 Y = YMin; Y < YMax; ++Y)
+	{
+		u32 *Dest = (u32 *)DestRow;
+		u32 *Src = (u32 *)SrcRow;
+		for(s32 X = XMin; X < XMax; ++X)
+		{
+			*Dest++ = *Src++;
+		}
+
+		DestRow += AppBackBuffer->Stride;
+		SrcRow += Bitmap->Stride;
+	}
 }
 
 internal void
@@ -701,6 +880,18 @@ CameraUpdate(app_state *AppState, app_back_buffer *BackBuffer, camera *Camera, f
 }
 
 internal void
+CameraInit(camera *Camera)
+{
+	Camera->Pos = {0.0f, 0.0f, 3.0f};
+	Camera->Yaw = -90.0f;
+	Camera->Pitch = 0.0f;
+
+	Camera->Direction.x = Cos(DEGREE_TO_RAD(Camera->Yaw)) * Cos(DEGREE_TO_RAD(Camera->Pitch));
+	Camera->Direction.y = Sin(DEGREE_TO_RAD(Camera->Pitch));
+	Camera->Direction.z = Sin(DEGREE_TO_RAD(Camera->Yaw)) * Cos(DEGREE_TO_RAD(Camera->Pitch));
+}
+
+internal void
 MeshVertexPositionsDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh *Mesh)
 {
 	v2f Dim = V2F(1.0f);
@@ -713,6 +904,56 @@ MeshVertexPositionsDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4S
 		Vertex = Mat4ScreenSpace * Vertex;
 
 		RectangleDraw(AppBackBuffer, Vertex.xy - Dim, Vertex.xy + Dim, V3F(1.0f));
+	}
+}
+
+internal void
+MeshWireFrameDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh *Mesh)
+{
+	v3f Color = V3F(1.0f);
+	for(u32 Index = 0; Index < Mesh->IndicesCount; Index += 4)
+	{
+		v4f V0 = V4FCreateFromV3F(Mesh->Vertices[Mesh->Indices[Index]], 1.0f);
+		v4f V1 = V4FCreateFromV3F(Mesh->Vertices[Mesh->Indices[Index + 1]], 1.0f);
+		v4f V2 = V4FCreateFromV3F(Mesh->Vertices[Mesh->Indices[Index + 2]], 1.0f);
+		v4f V3 = V4FCreateFromV3F(Mesh->Vertices[Mesh->Indices[Index + 3]], 1.0f);
+
+		V0 = Mat4MVP * V0;
+		V1 = Mat4MVP * V1;
+		V2 = Mat4MVP * V2;
+		V3 = Mat4MVP * V3;
+
+		V0 = (1.0f / V0.w) * V0;
+		V1 = (1.0f / V1.w) * V1;
+		V2 = (1.0f / V2.w) * V2;
+		V3 = (1.0f / V3.w) * V3;
+
+		V0 = Mat4ScreenSpace * V0;
+		V1 = Mat4ScreenSpace * V1;
+		V2 = Mat4ScreenSpace * V2;
+		V3 = Mat4ScreenSpace * V3;
+
+		LineDDADraw(AppBackBuffer, V0.xy, V1.xy, Color);
+		LineDDADraw(AppBackBuffer, V1.xy, V2.xy, Color);
+		LineDDADraw(AppBackBuffer, V2.xy, V0.xy, Color);
+		LineDDADraw(AppBackBuffer, V2.xy, V3.xy, Color);
+		LineDDADraw(AppBackBuffer, V3.xy, V0.xy, Color);
+	}
+}
+
+internal void
+MeshDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh *Mesh)
+{
+	for(u32 Index = 0; Index < Mesh->IndicesCount; Index += 4)
+	{
+		v4f V0 = V4FCreateFromV3F(Mesh->Vertices[Mesh->Indices[Index]], 1.0f);
+		v4f V1 = V4FCreateFromV3F(Mesh->Vertices[Mesh->Indices[Index + 1]], 1.0f);
+		v4f V2 = V4FCreateFromV3F(Mesh->Vertices[Mesh->Indices[Index + 2]], 1.0f);
+		v4f V3 = V4FCreateFromV3F(Mesh->Vertices[Mesh->Indices[Index + 3]], 1.0f);
+
+		TriangleDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, V0, V1, V2);
+		TriangleDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, V0, V3, V2);
+		//TriangleDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, V0, V2, V3);
 	}
 }
 
@@ -738,7 +979,6 @@ CubeWireFrameDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenS
 
 extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 {
-
 	app_state *AppState = (app_state *)AppMemory->PermanentStorage;
 	
 	ASSERT(sizeof(AppState) <= AppMemory->PermanentStorageSize);
@@ -751,17 +991,17 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 										 (u8 *)AppMemory->PermanentStorage + sizeof(app_state));
 
 		AppState->Cube = DEBUGObjReadEntireFile(Thread,  "models/cube.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
+		//AppState->Cube = DEBUGObjReadEntireFile(Thread,  "models/untitled.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
 		AppState->Suzanne = DEBUGObjReadEntireFile(Thread,  "models/suzanne.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
+		AppState->Test = DEBUGBitmapReadEntireFile(Thread, "structured_art.bmp", AppMemory->debug_platform_file_read_entire);
+
+
 
 		camera *Camera = &AppState->Camera;
-		Camera->Pos = {0.0f, 0.0f, 3.0f};
-		Camera->Yaw = -90.0f;
-		Camera->Pitch = 0.0f;
-		Camera->Direction.x = Cos(DEGREE_TO_RAD(Camera->Yaw)) * Cos(DEGREE_TO_RAD(Camera->Pitch));
-		Camera->Direction.y = Sin(DEGREE_TO_RAD(Camera->Pitch));
-		Camera->Direction.z = Sin(DEGREE_TO_RAD(Camera->Yaw)) * Cos(DEGREE_TO_RAD(Camera->Pitch));
+		CameraInit(Camera);
 
 		AppState->MapToCamera = Mat4CameraMap(Camera->Pos, Camera->Pos + Camera->Direction);
+		//AppState->MapToCamera = Mat4CameraMapV2(Camera->Pos, Camera->Right, Camera->Up, Camera->Direction);
 		AppState->CameraIndex = 0;
 
 		f32 FOV = DEGREE_TO_RAD(45.0f);
@@ -796,45 +1036,35 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 
 	// TODO(Justin): What do we update first? The camera's position or
 	// orientation. How does updating the orientation/position affect the other?
-	v3f ddP = {};
+	v3f dP = {};
 	v3f Target = Camera->Pos + Camera->Direction;
+	f32 CameraSpeed = 5.0f;
 	if(KeyBoardController->W.EndedDown)
 	{
-		ddP += {0.0f, 0.0f, -1.0f * dt};
+		dP += dt * Camera->Direction;
 	}
 
 	if(KeyBoardController->S.EndedDown)
 	{
-		ddP += {0.0f, 0.0f, 1.0f * dt};
+		dP -= dt * Camera->Direction;
 	}
 	if(KeyBoardController->A.EndedDown)
 	{
-		ddP += {-1.0f * dt, 0.0f, 0.0f};
+		dP += dt * Normalize(Cross(YAxis(), Camera->Direction));
 	}
 	if(KeyBoardController->D.EndedDown)
 	{
-		ddP += dt * Normalize(Cross(Target, YAxis()));
-	}
-	if(KeyBoardController->Up.EndedDown)
-	{
-		ddP += dt * Target;
-	}
-	if(KeyBoardController->Down.EndedDown)
-	{
-		ddP += -dt * Target;
+		dP -= dt * Normalize(Cross(YAxis(), Camera->Direction));
 	}
 
-	if((ddP.x != 0.0f) && (ddP.y != 0.0f) && (ddP.z != 0.0f))
-	{
-		ddP = Normalize(ddP);
-	}
 
-	ddP *= 8.0f;
-	Camera->Pos += ddP;
+	dP *= CameraSpeed;
+	Camera->Pos += dP;
 
 	CameraUpdate(AppState, AppBackBuffer, Camera, AppInput->dMouseX, AppInput->dMouseY, dt);
 
 	AppState->MapToCamera = Mat4CameraMap(Camera->Pos, Camera->Pos + Camera->Direction);
+	//AppState->MapToCamera = Mat4CameraMapV2(Camera->Pos, Camera->Right, Camera->Up, Camera->Direction);
 
 	mat4 MapToCamera = AppState->MapToCamera;
 	mat4 MapToWorld = Mat4WorldSpaceMap(V3F(0.0f, 0.0f, -30.0f));
@@ -856,24 +1086,18 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		}
 	}
 
-	triangle *T = &AppState->Triangle;
+
+	mat4 XRotation = Mat4Identity();
 	mat4 YRotation = Mat4YRotation(dt);
+	mat4 ZRotation = Mat4Identity();
+	mat4 R = ZRotation * YRotation * XRotation;
 
-	for(u32 Index = 0; Index < 3; ++Index)
-	{
-		T->Vertices[Index] = YRotation * T->Vertices[Index];
-	}
-	TriangleDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, T, V4F(1.0f, 0.0f, 0.0f, 1.0f));
-#if 0
-
-	loaded_obj *Model = &AppState->Suzanne;
+	loaded_obj *Model = &AppState->Cube;
 	mesh *Mesh = &Model->Mesh;
 	for(u32 Index = 0; Index < Mesh->VertexCount; ++Index)
 	{
-		Mesh->Vertices[Index] = YRotation * Mesh->Vertices[Index];
+		Mesh->Vertices[Index] = R * Mesh->Vertices[Index];
 	}
-
-
-	MeshVertexPositionsDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, Mesh);
-#endif
+	MeshDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, Mesh);
+	//MeshWireFrameDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, Mesh);
 }
