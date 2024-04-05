@@ -1,5 +1,5 @@
 # SoftwarRenderer
-Experiments in software rendering techniques
+A 3D software renderer written from scratch for learning purposes.
 
 ## Compiling
 To compile, change directory to the src directory , enable the MSVC command line tools by calling shell.bat, then run build.bat. 
