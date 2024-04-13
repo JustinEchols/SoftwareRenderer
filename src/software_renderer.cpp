@@ -1,4 +1,5 @@
 #include "software_renderer.h"
+#include "software_renderer_geometry.cpp"
 
 internal v3f
 ColorRandInit()
@@ -297,7 +298,8 @@ Barycentric(v3f X, v3f Y, v3f Z, v3f P)
 {
 	//
 	// NOTE(Justin): The computation of finding the cood. is based on the area
-	// interpretation of Barycentric coordinates.
+	// interpretation of Barycentric coordinates. Moreoever, these coordinates
+	// are in WORLD SPACE (R^3).
 	//
 	
 	v3f Result = {};
@@ -323,6 +325,7 @@ Barycentric(v3f X, v3f Y, v3f Z, v3f P)
 	return(Result);
 }
 
+// NOTE(Justin): Computes Barycentric coordinates of a triangle IN SCREEN SPACE.
 internal v3f
 BarycentricV2(v2f V0, v2f V1, v2f V2, v2f P)
 {
@@ -346,6 +349,7 @@ BarycentricV2(v2f V0, v2f V1, v2f V2, v2f P)
 	return(Result);
 }
 
+
 internal void
 TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, v4f A, v4f B, v4f C)
 {
@@ -366,9 +370,9 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 	v2f V1 = B.xy;
 	v2f V2 = C.xy;
 
-	v2f X = V1 - V0;
-	v2f Y = V2 - V0;
-	f32 SignedDoubleArea = Det(X, Y);
+	v2f E1 = V1 - V0;
+	v2f E2 = V2 - V0;
+	f32 SignedDoubleArea = Det(E1, E2);
 	b32 Swapped = false;
 	if(SignedDoubleArea < 0)
 	{
@@ -428,9 +432,9 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 	v2f V1 = Fragment.Vertices[1].xy;
 	v2f V2 = Fragment.Vertices[2].xy;
 
-	v2f X = V1 - V0;
-	v2f Y = V2 - V0;
-	f32 SignedDoubleArea = Det(X, Y);
+	v2f E1 = V1 - V0;
+	v2f E2 = V2 - V0;
+	f32 SignedDoubleArea = Det(E1, E2);
 	b32 Swapped = false;
 	if(SignedDoubleArea < 0)
 	{
@@ -467,16 +471,91 @@ TriangleDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace,
 					Barycentric = BarycentricV2(V0, V1, V2, P);
 				}
 
-				v3f Color = Barycentric.x * Triangle->Colors[0] +
+				v3f Color = (Barycentric.x * Triangle->Colors[0] +
 							Barycentric.y * Triangle->Colors[1] +
-							Barycentric.z * Triangle->Colors[2];
+							Barycentric.z * Triangle->Colors[2]);
 				PixelSet(AppBackBuffer, P, Color);
 			}
 		}
 	}
 }
 
+#if 0
+internal void
+TriangleDrawV2(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, triangle *Triangle)
+{
+	triangle Fragment = {};
+	for(u32 Index = 0; Index < 3; Index++)
+	{
+		Fragment.Vertices[Index] = Mat4MVP * Triangle->Vertices[Index];
+		Fragment.Vertices[Index] = (1.0f / Fragment.Vertices[Index].w) * Fragment.Vertices[Index];
+		Fragment.Vertices[Index] = Mat4ScreenSpace * Fragment.Vertices[Index];
 
+	}
+
+	v2f Tmp = {};
+	v2f V0 = Fragment.Vertices[0].xy;
+	v2f V1 = Fragment.Vertices[1].xy;
+	v2f V2 = Fragment.Vertices[2].xy;
+
+	v2f X = V1 - V0;
+	v2f Y = V2 - V0;
+	f32 SignedDoubleArea = Det(X, Y);
+	b32 Swapped = false;
+	if(SignedDoubleArea < 0)
+	{
+		Tmp = V1;
+		V1 = V2;
+		V2 = Tmp;
+		Swapped = true;
+	}
+
+	s32 XMin = F32RoundToS32(Min3(V0.x, V1.x, V2.x));
+	s32 YMin = F32RoundToS32(Min3(V0.y, V1.y, V2.y));
+	s32 XMax = F32RoundToS32(Max3(V0.x, V1.x, V2.x));
+	s32 YMax = F32RoundToS32(Max3(V0.y, V1.y, V2.y));
+
+	f32 A01 = V0.y - V1.y;
+	f32 A12 = V1.y - V2.y;
+	f32 A20 = V2.y - V0.y;
+
+	f32 B01 = V1.x - V0.x;
+	f32 B12 = V2.x - V1.x;
+	f32 B20 = V0.x - V2.x;
+
+	v2f P = {(f32)XMin, (f32)YMin};
+	f32 E0Row = Det((V2 - V1), (P - V1));
+	f32 E1Row = Det((V0 - V2), (P - V2));
+	f32 E2Row = Det((V1 - V0), (P - V0));
+
+	for(s32 Y = YMin; Y < YMax; ++Y)
+	{
+		f32 E0 = E0Row;
+		f32 E1 = E1Row;
+		f32 E2 = E2Row;
+		for(s32 X = XMin; X < XMax; ++X)
+		{
+			if((E0 >= 0) && (E1 >= 0) && (E2 >= 0))
+			{
+				v3f Barycentric = {};
+
+				v3f Color = (E0 * Triangle->Colors[0] +
+							E1 * Triangle->Colors[1] +
+							E2 * Triangle->Colors[2]);
+				PixelSet(AppBackBuffer, {(f32)X, (f32)Y}, Color);
+			}
+
+			E0 += A12;
+			E1 += A20;
+			E2 += A01;
+		}
+
+		E0Row += B12;
+		E1Row += B20;
+		E2Row += B01;
+	}
+}
+#endif
 
 internal void
 GridDraw(app_back_buffer *BackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, v4f P)
@@ -793,7 +872,6 @@ DEBUGBitmapReadEntireFile(thread_context *Thread, char *FileName, debug_platform
 		Result.Width = Header->Width;
 		Result.Height = Header->Height;
 		Result.Stride = BITMAP_BYTES_PER_PIXEL * Header->Width;
-		Result.Memory = PixelData;
 	}
 
 	return(Result);
@@ -928,6 +1006,51 @@ MeshWireFrameDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenS
 }
 
 internal void
+MeshWireFrameDraw2(app_back_buffer *AppBackBuffer, mat4 M,
+		v3f OC, v3f XC, v3f YC, v3f ZC, mat4 P, mat4 Mat4ScreenSpace, mesh *Mesh)
+{
+	v3f Color = V3F(1.0f);
+	for(u32 Index = 0; Index < Mesh->IndicesCount; Index += 4)
+	{
+		v4f V0 = V4FCreateFromV3F(Mesh->Vertices[Mesh->Indices[Index]], 1.0f);
+		v4f V1 = V4FCreateFromV3F(Mesh->Vertices[Mesh->Indices[Index + 1]], 1.0f);
+		v4f V2 = V4FCreateFromV3F(Mesh->Vertices[Mesh->Indices[Index + 2]], 1.0f);
+		v4f V3 = V4FCreateFromV3F(Mesh->Vertices[Mesh->Indices[Index + 3]], 1.0f);
+
+		V0 = M * V0;
+		V1 = M * V1;
+		V2 = M * V2;
+		V3 = M * V3;
+
+		V0 = V4FCreateFromV3F(CameraTransformTest(OC, XC, YC, ZC, V0.xyz), 1.0f);
+		V1 = V4FCreateFromV3F(CameraTransformTest(OC, XC, YC, ZC, V1.xyz), 1.0f);
+		V2 = V4FCreateFromV3F(CameraTransformTest(OC, XC, YC, ZC, V2.xyz), 1.0f);
+		V3 = V4FCreateFromV3F(CameraTransformTest(OC, XC, YC, ZC, V3.xyz), 1.0f);
+
+		V0 = P * V0;
+		V1 = P * V1;
+		V2 = P * V2;
+		V3 = P * V3;
+
+		V0 = (1.0f / V0.w) * V0;
+		V1 = (1.0f / V1.w) * V1;
+		V2 = (1.0f / V2.w) * V2;
+		V3 = (1.0f / V3.w) * V3;
+
+		V0 = Mat4ScreenSpace * V0;
+		V1 = Mat4ScreenSpace * V1;
+		V2 = Mat4ScreenSpace * V2;
+		V3 = Mat4ScreenSpace * V3;
+
+		LineDDADraw(AppBackBuffer, V0.xy, V1.xy, Color);
+		LineDDADraw(AppBackBuffer, V1.xy, V2.xy, Color);
+		LineDDADraw(AppBackBuffer, V2.xy, V0.xy, Color);
+		LineDDADraw(AppBackBuffer, V2.xy, V3.xy, Color);
+		LineDDADraw(AppBackBuffer, V3.xy, V0.xy, Color);
+	}
+}
+
+internal void
 MeshDraw(app_back_buffer *AppBackBuffer, mat4 Mat4MVP, mat4 Mat4ScreenSpace, mesh *Mesh)
 {
 	for(u32 Index = 0; Index < Mesh->IndicesCount; Index += 4)
@@ -957,7 +1080,6 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 										 (u8 *)AppMemory->PermanentStorage + sizeof(app_state));
 
 		AppState->Cube = DEBUGObjReadEntireFile(Thread,  "models/cube.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
-		//AppState->Cube = DEBUGObjReadEntireFile(Thread,  "models/untitled.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
 		AppState->Suzanne = DEBUGObjReadEntireFile(Thread,  "models/suzanne.obj", &AppState->WorldArena, AppMemory->debug_platform_file_read_entire);
 		AppState->Test = DEBUGBitmapReadEntireFile(Thread, "structured_art.bmp", AppMemory->debug_platform_file_read_entire);
 
@@ -983,6 +1105,9 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		AppState->Triangle.Vertices[0] = V4F(-0.5f, -0.5f, 0.0f, 1.0f);
 		AppState->Triangle.Vertices[1] = V4F(0.0f, 0.0f, 0.0f, 1.0f);
 		AppState->Triangle.Vertices[2] = V4F(0.5f, -0.5f, 0.0f, 1.0f);
+		AppState->Triangle.Colors[0] = V3F(1.0f, 1.0f, 0.0f);
+		AppState->Triangle.Colors[1] = V3F(1.0f, 0.0f, 1.0f);
+		AppState->Triangle.Colors[2] = V3F(0.0f, 1.0f, 0.0f);
 
 		AppState->Triangle.Colors[0] = V3F(1.0f, 0.0f, 0.0f);
 		AppState->Triangle.Colors[1] = V3F(0.0f, 1.0f, 0.0f);
@@ -1050,25 +1175,12 @@ extern "C" APP_UPDATE_AND_RENDER(app_update_and_render)
 		}
 	}
 
-	mat4 XRotation = Mat4Identity();
-	mat4 YRotation = Mat4YRotation(dt);
-	mat4 ZRotation = Mat4Identity();
-	mat4 R = ZRotation * YRotation * XRotation;
-	triangle *T = &AppState->Triangle;
-	T->Colors[0] = V3F(1.0f, 1.0f, 0.0f);
-	T->Colors[1] = V3F(1.0f, 0.0f, 1.0f);
-	T->Colors[2] = V3F(0.0f, 1.0f, 0.0f);
-	TriangleDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, T);
-#if 0
-
-
-	loaded_obj *Model = &AppState->Cube;
-	mesh *Mesh = &Model->Mesh;
-	for(u32 Index = 0; Index < Mesh->VertexCount; ++Index)
-	{
-		Mesh->Vertices[Index] = R * Mesh->Vertices[Index];
-	}
-	MeshDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, Mesh);
-	//MeshWireFrameDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, Mesh);
+	mesh *Mesh = &AppState->Cube.Mesh;
+#if 1
+	MeshWireFrameDraw(AppBackBuffer, Mat4MVP, Mat4ScreenSpace, Mesh);
+#else
+	MeshWireFrameDraw2(AppBackBuffer, MapToWorld, Camera->Pos, Camera->Right, Camera->Up, Camera->Direction,
+			MapToPersp, Mat4ScreenSpace, Mesh);
 #endif
+
 }
