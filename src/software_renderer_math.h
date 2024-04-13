@@ -138,10 +138,10 @@ Min3(f32 X, f32 Y, f32 Z)
 {
 	f32 Result = 0.0f;
 
-	f32 MinXY = Min(X, Y);
-	f32 MinXZ = Min(X, Z);
+	f32 MinXY = F32Min(X, Y);
+	f32 MinXZ = F32Min(X, Z);
 
-	Result = Min(MinXY, MinXZ);
+	Result = F32Min(MinXY, MinXZ);
 
 	return(Result);
 }
@@ -151,10 +151,10 @@ Max3(f32 X, f32 Y, f32 Z)
 {
 	f32 Result = 0.0f;
 
-	f32 MaxXY = Max(X, Y);
-	f32 MaxXZ = Max(X, Z);
+	f32 MaxXY = F32Max(X, Y);
+	f32 MaxXZ = F32Max(X, Z);
 
-	Result = Max(MaxXY, MaxXZ);
+	Result = F32Max(MaxXY, MaxXZ);
 
 	return(Result);
 }
@@ -484,12 +484,19 @@ operator -(v3f A, v3f B)
 	return(Result);
 }
 
+inline v3f &
+operator -=(v3f &A, v3f B)
+{
+	A = A - B;
+	return(A);
+}
+
 inline v3f
 Normalize(v3f A)
 {
 	v3f Result = A;
 
-	f32 c = sqrt(Dot(A, A));
+	f32 c = sqrtf(Dot(A, A));
 	ASSERT(c != 0);
 	c = 1.0f / c;
 
@@ -923,6 +930,32 @@ Mat4CameraMap(v3f P, v3f Target)
 	mat4 Rotate = Mat4TransposeMat3(Mat4(CameraRight, CameraUp, CameraDirection));
 
 	mat4 Translate = Mat4Translation(-1.0f * P);
+
+	R = Rotate * Translate;
+
+	return(R);
+}
+
+internal v3f
+CameraTransformTest(v3f O, v3f XC, v3f YC, v3f ZC, v3f P)
+{
+	v3f Result = {};
+
+	P = P - O;
+	Result.x = Dot(P, XC);
+	Result.y = Dot(P, YC);
+	Result.z = Dot(P, ZC);
+
+	return(Result);
+}
+
+internal mat4
+Mat4CameraMapV2(v3f CameraP, v3f CameraRight, v3f CameraUp, v3f CameraDirection)
+{
+	mat4 R;
+
+	mat4 Rotate = Mat4TransposeMat3(Mat4(CameraRight, CameraUp, CameraDirection));
+	mat4 Translate = Mat4Translation(-1.0f * CameraP);
 
 	R = Rotate * Translate;
 
